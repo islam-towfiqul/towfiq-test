@@ -88,9 +88,9 @@ export const ClientMiddleware: React.FC<ClientMiddlewareProps> = ({ children }) 
       return;
     }
 
-    if (isMounted && !isAuthenticated && !isPublicRoute) {
-      navigate('/login');
-    }
+    // if (isMounted && !isAuthenticated && !isPublicRoute) {
+    //   navigate('/login');
+    // }
   }, [isAuthenticated, isMounted, isPublicRoute, isSSOCallback, navigate, currentPath]);
 
   // Don't block rendering if we're processing SSO callback
@@ -98,7 +98,7 @@ export const ClientMiddleware: React.FC<ClientMiddlewareProps> = ({ children }) 
     return <>{children}</>;
   }
 
-  if ((!isMounted || !isAuthenticated) && !isPublicRoute) return null;
+  // if ((!isMounted || !isAuthenticated) && !isPublicRoute) return null;
 
   return <>{children}</>;
 };

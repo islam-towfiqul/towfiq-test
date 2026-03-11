@@ -27,6 +27,7 @@ import { SidebarProvider } from '@/components/ui-kit/sidebar';
 import { Toaster } from '@/components/ui-kit/toaster';
 import { useLanguageContext } from '@/i18n/language-context';
 import { LoadingOverlay } from '@/components/core';
+import { TodoPage } from '@/modules/todo';
 
 export const AppRoutes = () => {
   const { isLoading } = useLanguageContext();
@@ -49,6 +50,7 @@ export const AppRoutes = () => {
                 }
               >
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/todo" element={<TodoPage />} />
                 <Route
                   path="/finance"
                   element={
