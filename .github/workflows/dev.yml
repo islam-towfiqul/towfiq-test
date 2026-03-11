@@ -18,16 +18,16 @@ jobs:
       - name: desciption
         run: echo 'initializ pipeline with ubuntu-22.04'
 
-  # sonarqube-job:
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #   uses: ./.github/workflows/2_sonar.yml
-  #   secrets:
-  #     SELISE_GITHUB_PAT: ${{ secrets.SELISE_GITHUB_PAT }}
-  #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_GLOBAL }}
-  #     DEPENDENCY_TRACK_API_KEY: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
-  #   needs: [initialization]
+  sonarqube-job:
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/2_sonar.yml
+    secrets:
+      SELISE_GITHUB_PAT: ${{ secrets.SELISE_GITHUB_PAT }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_GLOBAL }}
+      DEPENDENCY_TRACK_API_KEY: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
+    needs: [initialization]
 
   cd-job:
     permissions:
@@ -48,7 +48,7 @@ jobs:
       ClUSTER_RESOURCE_GROUP: ${{ secrets.ClUSTER_AKS_BLOCKS_RESOURCE_GROUP }}
       CLUSTER_NAME: ${{ secrets.AKS_BLOCKS_DEV_CLUSTER }}
       ACR_RESOURCE_GROUP: ${{ secrets.ClUSTER_AKS_BLOCKS_RESOURCE_GROUP }}
-    needs: [initialization]
+    needs: [sonarqube-job]
 
   # storybook-job:
   #   permissions:
@@ -70,4 +70,4 @@ jobs:
   #     ClUSTER_RESOURCE_GROUP: ${{ secrets.ClUSTER_AKS_BLOCKS_RESOURCE_GROUP }}
   #     CLUSTER_NAME: ${{ secrets.AKS_BLOCKS_DEV_CLUSTER }}
   #     ACR_RESOURCE_GROUP: ${{ secrets.ClUSTER_AKS_BLOCKS_RESOURCE_GROUP }}
-  #   needs: [initialization]
+  #   needs: [sonarqube-job]
