@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Tag, Trash2, X } from 'lucide-react';
 import {
   Dialog,
@@ -40,22 +40,15 @@ export function CardDetailDialog({
   const [newLabelName, setNewLabelName] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(LABEL_COLORS[0].value);
 
-  const resetForm = () => {
-    if (card) {
+  useEffect(() => {
+    if (card && open) {
       setTitle(card.title);
       setDescription(card.description);
       setDueDate(card.dueDate ?? '');
+      setShowLabelPicker(false);
+      setNewLabelName('');
     }
-    setShowLabelPicker(false);
-    setNewLabelName('');
-  };
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && card) {
-      resetForm();
-    }
-    onOpenChange(isOpen);
-  };
+  }, [card, open]);
 
   const handleSave = () => {
     if (!card) return;
@@ -81,7 +74,7 @@ export function CardDetailDialog({
   if (!card) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="sr-only">Edit card</DialogTitle>
@@ -136,7 +129,8 @@ export function CardDetailDialog({
                 {card.labels.map((label) => (
                   <Badge
                     key={label.id}
-                    className={`${label.color} cursor-default border-none text-white`}
+                    className="cursor-default border-none text-white"
+                    style={{ backgroundColor: label.color }}
                   >
                     {label.name}
                     <button
@@ -170,11 +164,12 @@ export function CardDetailDialog({
                     <button
                       key={c.value}
                       type="button"
-                      className={`h-7 w-7 rounded-md ${c.value} transition-transform ${
+                      className={`h-7 w-7 rounded-md transition-transform ${
                         selectedColor === c.value
                           ? 'scale-110 ring-2 ring-ring ring-offset-2'
                           : 'hover:scale-105'
                       }`}
+                      style={{ backgroundColor: c.value }}
                       title={c.name}
                       onClick={() => setSelectedColor(c.value)}
                     />

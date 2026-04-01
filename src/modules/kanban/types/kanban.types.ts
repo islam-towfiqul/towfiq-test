@@ -28,12 +28,12 @@ export interface KanbanBoard {
 }
 
 export const LABEL_COLORS = [
-  { name: 'Green', value: 'bg-emerald-500' },
-  { name: 'Yellow', value: 'bg-amber-400' },
-  { name: 'Orange', value: 'bg-orange-500' },
-  { name: 'Red', value: 'bg-red-500' },
-  { name: 'Purple', value: 'bg-violet-500' },
-  { name: 'Blue', value: 'bg-blue-500' },
-  { name: 'Sky', value: 'bg-sky-400' },
-  { name: 'Pink', value: 'bg-pink-500' },
+  { name: 'Green', value: '#10b981' },
+  { name: 'Yellow', value: '#fbbf24' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Purple', value: '#8b5cf6' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Sky', value: '#38bdf8' },
+  { name: 'Pink', value: '#ec4899' },
 ] as const;

@@ -43,7 +43,8 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
             {card.labels.map((label) => (
               <span
                 key={label.id}
-                className={`h-2 w-10 rounded-full ${label.color}`}
+                className="h-2 w-10 rounded-full"
+                style={{ backgroundColor: label.color }}
                 title={label.name}
               />
             ))}

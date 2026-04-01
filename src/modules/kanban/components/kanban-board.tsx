@@ -14,14 +14,15 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Plus, X } from 'lucide-react';
+import { Filter, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui-kit/button';
 import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
+import { Badge } from '@/components/ui-kit/badge';
 import { KanbanColumn } from './kanban-column';
 import { CardDetailDialog } from './card-detail-dialog';
 import { useKanbanStore } from '../hooks/use-kanban-store';
-import type { KanbanCard as KanbanCardType } from '../types/kanban.types';
+import type { KanbanCard as KanbanCardType, KanbanLabel } from '../types/kanban.types';
 
 export function KanbanBoard() {
   const {
@@ -39,24 +40,55 @@ export function KanbanBoard() {
   } = useKanbanStore();
 
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
-  const [editingCard, setEditingCard] = useState<KanbanCardType | null>(null);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const editingCard = editingCardId ? cards[editingCardId] ?? null : null;
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
+  const [activeLabelFilters, setActiveLabelFilters] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  const allLabels = useMemo(() => {
+    const map = new Map<string, KanbanLabel>();
+    Object.values(cards).forEach((card) => {
+      card.labels.forEach((label) => {
+        if (!map.has(label.name)) {
+          map.set(label.name, label);
+        }
+      });
+    });
+    return Array.from(map.values());
+  }, [cards]);
+
+  const toggleLabelFilter = useCallback((labelName: string) => {
+    setActiveLabelFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(labelName)) {
+        next.delete(labelName);
+      } else {
+        next.add(labelName);
+      }
+      return next;
+    });
+  }, []);
+
   const columnCards = useMemo(() => {
     const map: Record<string, KanbanCardType[]> = {};
     for (const col of columns) {
-      map[col.id] = col.cardIds
-        .map((id) => cards[id])
-        .filter(Boolean);
+      const colCards = col.cardIds.map((id) => cards[id]).filter(Boolean);
+      if (activeLabelFilters.size > 0) {
+        map[col.id] = colCards.filter((card) =>
+          card.labels.some((label) => activeLabelFilters.has(label.name))
+        );
+      } else {
+        map[col.id] = colCards;
+      }
     }
     return map;
-  }, [columns, cards]);
+  }, [columns, cards, activeLabelFilters]);
 
   const findColumnByCardId = useCallback(
     (cardId: string) => {
@@ -142,13 +174,10 @@ export function KanbanBoard() {
     [findColumnByCardId, moveCard]
   );
 
-  const handleEditCard = useCallback(
-    (card: KanbanCardType) => {
-      setEditingCard(cards[card.id] ?? card);
-      setIsDialogOpen(true);
-    },
-    [cards]
-  );
+  const handleEditCard = useCallback((card: KanbanCardType) => {
+    setEditingCardId(card.id);
+    setIsDialogOpen(true);
+  }, []);
 
   const handleAddColumn = () => {
     const trimmed = newColumnTitle.trim();
@@ -160,6 +189,40 @@ export function KanbanBoard() {
 
   return (
     <div className="flex h-full flex-col">
+      {allLabels.length > 0 && (
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-medium-emphasis">
+            <Filter className="h-3.5 w-3.5" />
+            Filter by label
+          </span>
+          {allLabels.map((label) => {
+            const isActive = activeLabelFilters.has(label.name);
+            return (
+              <Badge
+                key={label.name}
+                className={`cursor-pointer select-none border-none text-white transition-opacity ${
+                  isActive ? 'ring-2 ring-ring ring-offset-1' : ''
+                } ${activeLabelFilters.size > 0 && !isActive ? 'opacity-40' : ''}`}
+                style={{ backgroundColor: label.color }}
+                onClick={() => toggleLabelFilter(label.name)}
+              >
+                {label.name}
+              </Badge>
+            );
+          })}
+          {activeLabelFilters.size > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs text-medium-emphasis"
+              onClick={() => setActiveLabelFilters(new Set())}
+            >
+              <X className="mr-1 h-3 w-3" />
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -240,7 +303,8 @@ export function KanbanBoard() {
                   {activeCard.labels.map((label) => (
                     <span
                       key={label.id}
-                      className={`h-2 w-10 rounded-full ${label.color}`}
+                      className="h-2 w-10 rounded-full"
+                      style={{ backgroundColor: label.color }}
                     />
                   ))}
                 </div>
