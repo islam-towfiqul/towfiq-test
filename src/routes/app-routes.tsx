@@ -28,6 +28,7 @@ import { Toaster } from '@/components/ui-kit/toaster';
 import { useLanguageContext } from '@/i18n/language-context';
 import { LoadingOverlay } from '@/components/core';
 import { TodoPage } from '@/modules/todo';
+import { KanbanPage } from '@/modules/kanban';
 
 export const AppRoutes = () => {
   const { isLoading } = useLanguageContext();
@@ -51,6 +52,7 @@ export const AppRoutes = () => {
               >
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/todo" element={<TodoPage />} />
+                <Route path="/kanban" element={<KanbanPage />} />
                 <Route
                   path="/finance"
                   element={
