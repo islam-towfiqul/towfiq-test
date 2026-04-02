@@ -46,8 +46,8 @@ export const menuItems: MenuItem[] = [
   createMenuItem('task-manager', 'TASK_MANAGER', '/task-manager', 'Presentation', {
     isIntegrated: true,
   }),
-  createMenuItem('todo', 'ToDo', '/todo', 'Presentation'),
-  createMenuItem('kanban', 'Kanban', '/kanban', 'Columns3'),
+  createMenuItem('todo', 'TODO', '/todo', 'Presentation'),
+  createMenuItem('kanban', 'KANBAN', '/kanban', 'Columns3'),
   createMenuItem('mail', 'MAIL', '/mail/inbox', 'Inbox'),
   createMenuItem('calendar', 'CALENDAR', '/calendar', 'Calendar'),
   createMenuItem('activity-log', 'ACTIVITY_LOG', '/activity-log', 'FileClock', {}),

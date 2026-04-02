@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { MoreHorizontal, Pencil, Plus, Trash2, X } from 'lucide-react';
@@ -50,6 +51,7 @@ export function KanbanColumn({
   onRenameColumn,
   onDeleteColumn,
 }: KanbanColumnProps) {
+  const { t } = useTranslation();
   const accent = COLUMN_ACCENT_COLORS[colorIndex % COLUMN_ACCENT_COLORS.length];
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -139,7 +141,7 @@ export function KanbanColumn({
               }}
             >
               <Pencil className="h-4 w-4" />
-              Rename
+              {t('RENAME')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -147,7 +149,7 @@ export function KanbanColumn({
               onClick={() => setShowDeleteColumnConfirm(true)}
             >
               <Trash2 className="h-4 w-4" />
-              Delete
+              {t('DELETE')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -179,8 +181,8 @@ export function KanbanColumn({
               <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-dashed border-border text-medium-emphasis">
                 <Plus className="h-4 w-4" />
               </div>
-              <p className="text-xs text-medium-emphasis">No cards yet</p>
-              <p className="text-[11px] text-low-emphasis">Click below to add one</p>
+              <p className="text-xs text-medium-emphasis">{t('NO_CARDS_YET')}</p>
+              <p className="text-[11px] text-low-emphasis">{t('CLICK_BELOW_TO_ADD_ONE')}</p>
             </div>
           )}
         </div>
@@ -188,7 +190,7 @@ export function KanbanColumn({
         {isAdding ? (
           <div className="mt-2 shrink-0 space-y-2">
             <Input
-              placeholder="Enter a title..."
+              placeholder={t('ENTER_A_TITLE')}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={handleAddKeyDown}
@@ -197,7 +199,7 @@ export function KanbanColumn({
             />
             <div className="flex gap-1">
               <Button size="sm" onClick={handleAddCard}>
-                Add card
+                {t('ADD_CARD')}
               </Button>
               <Button
                 variant="ghost"
@@ -220,7 +222,7 @@ export function KanbanColumn({
             onClick={() => setIsAdding(true)}
           >
             <Plus className="mr-1 h-4 w-4" />
-            Add a card
+            {t('ADD_A_CARD')}
           </Button>
         )}
       </div>
@@ -228,11 +230,11 @@ export function KanbanColumn({
       <ConfirmationModal
         open={showDeleteColumnConfirm}
         onOpenChange={setShowDeleteColumnConfirm}
-        title="Delete list"
-        description={`Are you sure you want to delete "${column.title}"? All cards in this list will also be deleted. This action cannot be undone.`}
+        title={t('DELETE_LIST')}
+        description={t('DELETE_LIST_CONFIRM', { title: column.title })}
         onConfirm={() => onDeleteColumn(column.id)}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('DELETE')}
+        cancelText={t('CANCEL')}
       />
     </div>
   );

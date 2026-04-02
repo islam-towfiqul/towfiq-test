@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Pencil, Trash2 } from 'lucide-react';
@@ -13,6 +14,7 @@ interface KanbanCardProps {
 }
 
 export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
+  const { t, i18n } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const {
     attributes,
@@ -71,7 +73,7 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
           >
             <Calendar className="h-3 w-3" />
             <span>
-              {new Date(card.dueDate).toLocaleDateString('en-US', {
+              {new Date(card.dueDate).toLocaleDateString(i18n.language, {
                 month: 'short',
                 day: 'numeric',
               })}
@@ -106,11 +108,11 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
       <ConfirmationModal
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
-        title="Delete card"
-        description={`Are you sure you want to delete "${card.title}"? This action cannot be undone.`}
+        title={t('DELETE_CARD')}
+        description={t('DELETE_CARD_CONFIRM', { title: card.title })}
         onConfirm={() => onDelete(card.id)}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('DELETE')}
+        cancelText={t('CANCEL')}
       />
     </div>
   );

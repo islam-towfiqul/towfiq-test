@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -35,6 +36,7 @@ import { useKanbanStore } from '../hooks/use-kanban-store';
 import type { KanbanCard as KanbanCardType, KanbanLabel } from '../types/kanban.types';
 
 export function KanbanBoard() {
+  const { t } = useTranslation();
   const {
     columns,
     cards,
@@ -231,7 +233,7 @@ export function KanbanBoard() {
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-medium-emphasis" />
           <input
             type="text"
-            placeholder="Search cards..."
+            placeholder={t('SEARCH_CARDS')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-9 w-56 rounded-md border border-input bg-background pl-8 pr-8 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
@@ -254,22 +256,22 @@ export function KanbanBoard() {
               className="gap-1.5"
             >
               <ArrowDownUp className="h-3.5 w-3.5" />
-              {sortOrder === 'asc' ? 'Due: Earliest' : sortOrder === 'desc' ? 'Due: Latest' : 'Sort'}
+              {sortOrder === 'asc' ? t('DUE_EARLIEST') : sortOrder === 'desc' ? t('DUE_LATEST') : t('SORT')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
             <DropdownMenuItem onClick={() => setSortOrder('asc')}>
-              Due date: Earliest first
+              {t('DUE_DATE_EARLIEST_FIRST')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortOrder('desc')}>
-              Due date: Latest first
+              {t('DUE_DATE_LATEST_FIRST')}
             </DropdownMenuItem>
             {sortOrder !== 'none' && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setSortOrder('none')}>
                   <X className="h-3.5 w-3.5" />
-                  Clear sort
+                  {t('CLEAR_SORT')}
                 </DropdownMenuItem>
               </>
             )}
@@ -281,7 +283,7 @@ export function KanbanBoard() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
                 <Filter className="h-3.5 w-3.5" />
-                Filter
+                {t('FILTER')}
                 {activeLabelFilters.size > 0 && (
                   <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
                     {activeLabelFilters.size}
@@ -291,14 +293,14 @@ export function KanbanBoard() {
             </PopoverTrigger>
             <PopoverContent align="start" className="w-56 p-2">
               <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                <span className="text-xs font-semibold text-high-emphasis">Labels</span>
+                <span className="text-xs font-semibold text-high-emphasis">{t('LABELS')}</span>
                 {activeLabelFilters.size > 0 && (
                   <button
                     type="button"
                     className="text-xs text-medium-emphasis hover:text-high-emphasis"
                     onClick={() => setActiveLabelFilters(new Set())}
                   >
-                    Clear all
+                    {t('CLEAR_ALL')}
                   </button>
                 )}
               </div>
@@ -375,7 +377,7 @@ export function KanbanBoard() {
             <div className="w-72 shrink-0">
               <div className="rounded border bg-muted/40 p-2">
                 <Input
-                  placeholder="Enter list title..."
+                  placeholder={t('ENTER_LIST_TITLE')}
                   value={newColumnTitle}
                   onChange={(e) => setNewColumnTitle(e.target.value)}
                   onKeyDown={(e) => {
@@ -392,7 +394,7 @@ export function KanbanBoard() {
                 />
                 <div className="flex gap-1">
                   <Button size="sm" onClick={handleAddColumn}>
-                    Add list
+                    {t('ADD_LIST')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -417,7 +419,7 @@ export function KanbanBoard() {
                 <span className="flex h-6 w-6 items-center justify-center rounded border border-dashed border-current">
                   <Plus className="h-3.5 w-3.5" />
                 </span>
-                Add another list
+                {t('ADD_ANOTHER_LIST')}
               </button>
             </div>
           )}

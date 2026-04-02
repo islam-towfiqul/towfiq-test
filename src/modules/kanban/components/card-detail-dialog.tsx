@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Tag, Trash2, X } from 'lucide-react';
 import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import {
@@ -40,6 +41,7 @@ export function CardDetailDialog({
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(LABEL_COLORS[0].value);
+  const { t } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -79,33 +81,33 @@ export function CardDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="sr-only">Edit card</DialogTitle>
+          <DialogTitle className="sr-only">{t('EDIT_CARD')}</DialogTitle>
           <DialogDescription className="sr-only">
-            Edit card details including title, description, labels, and due date
+            {t('EDIT_CARD_DESCRIPTION')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-medium-emphasis">
-              Title
+              {t('TITLE')}
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Card title"
+              placeholder={t('CARD_TITLE')}
               className="h-10"
             />
           </div>
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-medium-emphasis">
-              Description
+              {t('DESCRIPTION')}
             </label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add a more detailed description..."
+              placeholder={t('ADD_DETAILED_DESCRIPTION')}
               rows={4}
             />
           </div>
@@ -114,7 +116,7 @@ export function CardDetailDialog({
             <div className="mb-1.5 flex items-center justify-between">
               <label className="flex items-center gap-1.5 text-xs font-medium text-medium-emphasis">
                 <Tag className="h-3.5 w-3.5" />
-                Labels
+                {t('LABELS')}
               </label>
               <Button
                 variant="ghost"
@@ -122,7 +124,7 @@ export function CardDetailDialog({
                 className="h-7 text-xs"
                 onClick={() => setShowLabelPicker(!showLabelPicker)}
               >
-                {showLabelPicker ? 'Cancel' : '+ Add'}
+                {showLabelPicker ? t('CANCEL') : `+ ${t('ADD')}`}
               </Button>
             </div>
 
@@ -152,7 +154,7 @@ export function CardDetailDialog({
                 <Input
                   value={newLabelName}
                   onChange={(e) => setNewLabelName(e.target.value)}
-                  placeholder="Label name"
+                  placeholder={t('LABEL_NAME')}
                   className="h-8 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -178,7 +180,7 @@ export function CardDetailDialog({
                   ))}
                 </div>
                 <Button size="sm" className="h-7 text-xs" onClick={handleAddLabel}>
-                  Add label
+                  {t('ADD_LABEL')}
                 </Button>
               </div>
             )}
@@ -186,8 +188,8 @@ export function CardDetailDialog({
 
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-medium-emphasis">
-              <Calendar className="h-3.5 w-3.5" />
-              Due date
+                <Calendar className="h-3.5 w-3.5" />
+              {t('DUE_DATE')}
             </label>
             <Input
               type="date"
@@ -206,14 +208,14 @@ export function CardDetailDialog({
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="mr-1 h-4 w-4" />
-            Delete card
+            {t('DELETE_CARD')}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('CANCEL')}
             </Button>
             <Button size="sm" onClick={handleSave}>
-              Save
+              {t('SAVE')}
             </Button>
           </div>
         </div>
@@ -222,14 +224,14 @@ export function CardDetailDialog({
       <ConfirmationModal
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
-        title="Delete card"
-        description={`Are you sure you want to delete "${card.title}"? This action cannot be undone.`}
+        title={t('DELETE_CARD')}
+        description={t('DELETE_CARD_CONFIRM', { title: card.title })}
         onConfirm={() => {
           onDelete(card.id);
           onOpenChange(false);
         }}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('DELETE')}
+        cancelText={t('CANCEL')}
       />
     </Dialog>
   );
