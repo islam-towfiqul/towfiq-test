@@ -83,8 +83,8 @@ export function KanbanColumn({
   };
 
   return (
-    <div className="flex w-72 shrink-0 flex-col">
-      <div className="mb-2 flex items-center justify-between px-1">
+    <div className="flex max-h-full w-72 shrink-0 flex-col">
+      <div className="mb-2 flex shrink-0 items-center justify-between px-1">
         {isRenaming ? (
           <Input
             value={renameValue}
@@ -135,11 +135,11 @@ export function KanbanColumn({
 
       <div
         ref={setNodeRef}
-        className={`flex flex-1 flex-col rounded-lg border bg-muted/40 p-2 transition-colors ${
+        className={`flex min-h-0 flex-1 flex-col rounded-lg border bg-muted/40 p-2 transition-colors ${
           isOver ? 'border-primary/40 bg-primary/5' : 'border-transparent'
         }`}
       >
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           <SortableContext
             items={cards.map((c) => c.id)}
             strategy={verticalListSortingStrategy}
@@ -162,7 +162,7 @@ export function KanbanColumn({
         </div>
 
         {isAdding ? (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 shrink-0 space-y-2">
             <Input
               placeholder="Enter a title..."
               value={newTitle}
@@ -191,7 +191,8 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 w-full justify-start text-medium-emphasis"
+            className="mt-2 w-full shrink-0 justify-start rounded-xl px-3 py-2 text-primary hover:opacity-90"
+            style={{ backgroundColor: 'hsl(var(--primary-50))' }}
             onClick={() => setIsAdding(true)}
           >
             <Plus className="mr-1 h-4 w-4" />

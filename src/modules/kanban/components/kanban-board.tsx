@@ -14,7 +14,7 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Filter, Plus, X } from 'lucide-react';
+import { Filter, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui-kit/button';
 import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
@@ -48,6 +48,7 @@ export function KanbanBoard() {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [activeLabelFilters, setActiveLabelFilters] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -78,19 +79,26 @@ export function KanbanBoard() {
   }, []);
 
   const columnCards = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     const map: Record<string, KanbanCardType[]> = {};
     for (const col of columns) {
-      const colCards = col.cardIds.map((id) => cards[id]).filter(Boolean);
+      let colCards = col.cardIds.map((id) => cards[id]).filter(Boolean);
       if (activeLabelFilters.size > 0) {
-        map[col.id] = colCards.filter((card) =>
+        colCards = colCards.filter((card) =>
           card.labels.some((label) => activeLabelFilters.has(label.name))
         );
-      } else {
-        map[col.id] = colCards;
       }
+      if (query) {
+        colCards = colCards.filter(
+          (card) =>
+            card.title.toLowerCase().includes(query) ||
+            card.description.toLowerCase().includes(query)
+        );
+      }
+      map[col.id] = colCards;
     }
     return map;
-  }, [columns, cards, activeLabelFilters]);
+  }, [columns, cards, activeLabelFilters, searchQuery]);
 
   const findColumnByCardId = useCallback(
     (cardId: string) => {
@@ -190,9 +198,29 @@ export function KanbanBoard() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {allLabels.length > 0 && (
-        <div className="mb-3 flex items-center gap-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="mb-3 flex shrink-0 items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-medium-emphasis" />
+          <input
+            type="text"
+            placeholder="Search cards..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 w-56 rounded-md border border-input bg-background pl-8 pr-8 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-medium-emphasis hover:text-high-emphasis"
+              onClick={() => setSearchQuery('')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {allLabels.length > 0 && (
+          <>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
@@ -257,8 +285,9 @@ export function KanbanBoard() {
                 ))}
             </div>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -266,7 +295,7 @@ export function KanbanBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-1 gap-4 overflow-x-auto p-1 pb-4">
+        <div className="flex min-h-0 flex-1 items-start gap-4 overflow-x-auto overflow-y-hidden p-1 pb-4">
           <SortableContext
             items={columns.map((c) => c.id)}
             strategy={horizontalListSortingStrategy}
