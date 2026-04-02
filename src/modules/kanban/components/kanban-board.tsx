@@ -19,6 +19,8 @@ import { Button } from '@/components/ui-kit/button';
 import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
 import { Badge } from '@/components/ui-kit/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-kit/popover';
+import { Checkbox } from '@/components/ui-kit/checkbox';
 import { KanbanColumn } from './kanban-column';
 import { CardDetailDialog } from './card-detail-dialog';
 import { useKanbanStore } from '../hooks/use-kanban-store';
@@ -190,36 +192,70 @@ export function KanbanBoard() {
   return (
     <div className="flex h-full flex-col">
       {allLabels.length > 0 && (
-        <div className="mb-3 flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-medium-emphasis">
-            <Filter className="h-3.5 w-3.5" />
-            Filter by label
-          </span>
-          {allLabels.map((label) => {
-            const isActive = activeLabelFilters.has(label.name);
-            return (
-              <Badge
-                key={label.name}
-                className={`cursor-pointer select-none border-none text-white transition-opacity ${
-                  isActive ? 'ring-2 ring-ring ring-offset-1' : ''
-                } ${activeLabelFilters.size > 0 && !isActive ? 'opacity-40' : ''}`}
-                style={{ backgroundColor: label.color }}
-                onClick={() => toggleLabelFilter(label.name)}
-              >
-                {label.name}
-              </Badge>
-            );
-          })}
+        <div className="mb-3 flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Filter className="h-3.5 w-3.5" />
+                Filter
+                {activeLabelFilters.size > 0 && (
+                  <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+                    {activeLabelFilters.size}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-2">
+              <div className="mb-2 flex items-center justify-between px-2 pt-1">
+                <span className="text-xs font-semibold text-high-emphasis">Labels</span>
+                {activeLabelFilters.size > 0 && (
+                  <button
+                    type="button"
+                    className="text-xs text-medium-emphasis hover:text-high-emphasis"
+                    onClick={() => setActiveLabelFilters(new Set())}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col">
+                {allLabels.map((label) => {
+                  const isActive = activeLabelFilters.has(label.name);
+                  return (
+                    <button
+                      key={label.name}
+                      type="button"
+                      className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-accent"
+                      onClick={() => toggleLabelFilter(label.name)}
+                    >
+                      <Checkbox checked={isActive} />
+                      <span
+                        className="h-4 w-4 shrink-0 rounded"
+                        style={{ backgroundColor: label.color }}
+                      />
+                      <span className="truncate text-sm">{label.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
           {activeLabelFilters.size > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs text-medium-emphasis"
-              onClick={() => setActiveLabelFilters(new Set())}
-            >
-              <X className="mr-1 h-3 w-3" />
-              Clear
-            </Button>
+            <div className="flex items-center gap-1.5">
+              {allLabels
+                .filter((l) => activeLabelFilters.has(l.name))
+                .map((label) => (
+                  <Badge
+                    key={label.name}
+                    className="cursor-pointer select-none border-none text-white"
+                    style={{ backgroundColor: label.color }}
+                    onClick={() => toggleLabelFilter(label.name)}
+                  >
+                    {label.name}
+                    <X className="ml-1 h-3 w-3" />
+                  </Badge>
+                ))}
+            </div>
           )}
         </div>
       )}
