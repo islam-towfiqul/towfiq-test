@@ -227,7 +227,7 @@ export function KanbanBoard() {
                 <Filter className="h-3.5 w-3.5" />
                 Filter
                 {activeLabelFilters.size > 0 && (
-                  <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+                  <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
                     {activeLabelFilters.size}
                   </span>
                 )}
@@ -368,9 +368,11 @@ export function KanbanBoard() {
                   {activeCard.labels.map((label) => (
                     <span
                       key={label.id}
-                      className="h-2 w-10 rounded-full"
+                      className="inline-flex items-center rounded px-2.5 py-0.5 text-[11px] font-medium leading-5 text-white"
                       style={{ backgroundColor: label.color }}
-                    />
+                    >
+                      {label.name}
+                    </span>
                   ))}
                 </div>
               )}

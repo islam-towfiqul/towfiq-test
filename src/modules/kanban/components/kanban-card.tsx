@@ -35,18 +35,19 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Card
-        className="group relative cursor-grab bg-card p-3 hover:shadow-md active:cursor-grabbing"
+        className="group relative cursor-grab rounded bg-card p-3 hover:shadow-md active:cursor-grabbing"
         onClick={() => onEdit(card)}
       >
         {card.labels.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-1">
+          <div className="mb-2 flex flex-wrap gap-1 pr-12">
             {card.labels.map((label) => (
               <span
                 key={label.id}
-                className="h-2 w-10 rounded-full"
+                className="inline-flex items-center rounded px-2.5 py-0.5 text-[11px] font-medium leading-5 text-white"
                 style={{ backgroundColor: label.color }}
-                title={label.name}
-              />
+              >
+                {label.name}
+              </span>
             ))}
           </div>
         )}

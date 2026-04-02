@@ -99,7 +99,7 @@ export function KanbanColumn({
             <h3 className="text-sm font-semibold text-high-emphasis">
               {column.title}
             </h3>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-medium-emphasis">
+            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-medium-emphasis">
               {cards.length}
             </span>
           </div>
@@ -135,7 +135,7 @@ export function KanbanColumn({
 
       <div
         ref={setNodeRef}
-        className={`flex min-h-0 flex-1 flex-col rounded-lg border bg-muted/40 p-2 transition-colors ${
+        className={`flex min-h-0 flex-1 flex-col rounded border bg-muted/40 p-2 transition-colors ${
           isOver ? 'border-primary/40 bg-primary/5' : 'border-transparent'
         }`}
       >
@@ -191,7 +191,7 @@ export function KanbanColumn({
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 w-full shrink-0 justify-start rounded-xl px-3 py-2 text-primary hover:opacity-90"
+            className="mt-2 w-full shrink-0 justify-start rounded px-3 py-2 text-primary hover:opacity-90"
             style={{ backgroundColor: 'hsl(var(--primary-50))' }}
             onClick={() => setIsAdding(true)}
           >
