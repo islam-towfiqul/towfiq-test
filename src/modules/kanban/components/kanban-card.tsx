@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Pencil, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui-kit/card';
+import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import type { KanbanCard as KanbanCardType } from '../types/kanban.types';
 
 interface KanbanCardProps {
@@ -11,6 +13,7 @@ interface KanbanCardProps {
 }
 
 export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const {
     attributes,
     listeners,
@@ -92,13 +95,23 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
             className="rounded p-1 hover:bg-red-100"
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(card.id);
+              setShowDeleteConfirm(true);
             }}
           >
             <Trash2 className="h-3.5 w-3.5 text-red-500" />
           </button>
         </div>
       </Card>
+
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete card"
+        description={`Are you sure you want to delete "${card.title}"? This action cannot be undone.`}
+        onConfirm={() => onDelete(card.id)}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

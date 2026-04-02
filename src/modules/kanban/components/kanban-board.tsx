@@ -12,15 +12,23 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
+  arrayMove,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Filter, Plus, Search, X } from 'lucide-react';
+import { ArrowDownUp, Filter, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui-kit/button';
 import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
 import { Badge } from '@/components/ui-kit/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-kit/popover';
 import { Checkbox } from '@/components/ui-kit/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui-kit/dropdown-menu';
 import { KanbanColumn } from './kanban-column';
 import { CardDetailDialog } from './card-detail-dialog';
 import { useKanbanStore } from '../hooks/use-kanban-store';
@@ -49,6 +57,7 @@ export function KanbanBoard() {
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [activeLabelFilters, setActiveLabelFilters] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -95,10 +104,19 @@ export function KanbanBoard() {
             card.description.toLowerCase().includes(query)
         );
       }
+      if (sortOrder !== 'none') {
+        colCards = [...colCards].sort((a, b) => {
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          return sortOrder === 'asc' ? diff : -diff;
+        });
+      }
       map[col.id] = colCards;
     }
     return map;
-  }, [columns, cards, activeLabelFilters, searchQuery]);
+  }, [columns, cards, activeLabelFilters, searchQuery, sortOrder]);
 
   const findColumnByCardId = useCallback(
     (cardId: string) => {
@@ -126,9 +144,12 @@ export function KanbanBoard() {
       const activeId = active.id as string;
       const overId = over.id as string;
 
+      if (activeId === overId) return;
+
       const activeColumn = findColumnByCardId(activeId);
       if (!activeColumn) return;
 
+      // Only handle cross-column moves here
       let overColumnId: string;
       if (overId.startsWith('column-')) {
         overColumnId = overId.replace('column-', '');
@@ -138,18 +159,20 @@ export function KanbanBoard() {
         overColumnId = overColumn.id;
       }
 
-      if (activeColumn.id !== overColumnId) {
-        const overColumn = columns.find((c) => c.id === overColumnId);
-        if (!overColumn) return;
+      if (activeColumn.id === overColumnId) return;
 
-        let newIndex = overColumn.cardIds.length;
-        if (!overId.startsWith('column-')) {
-          newIndex = overColumn.cardIds.indexOf(overId);
-          if (newIndex === -1) newIndex = overColumn.cardIds.length;
-        }
+      const overColumn = columns.find((c) => c.id === overColumnId);
+      if (!overColumn) return;
 
-        moveCard(activeId, activeColumn.id, overColumnId, newIndex);
+      let newIndex: number;
+      if (overId.startsWith('column-')) {
+        newIndex = overColumn.cardIds.length;
+      } else {
+        newIndex = overColumn.cardIds.indexOf(overId);
+        if (newIndex === -1) newIndex = overColumn.cardIds.length;
       }
+
+      moveCard(activeId, activeColumn.id, overColumnId, newIndex);
     },
     [columns, findColumnByCardId, moveCard]
   );
@@ -169,17 +192,21 @@ export function KanbanBoard() {
       const activeColumn = findColumnByCardId(activeId);
       if (!activeColumn) return;
 
-      if (overId.startsWith('column-')) return;
-
+      // Only handle same-column reordering here
       const overColumn = findColumnByCardId(overId);
-      if (!overColumn) return;
+      if (!overColumn || activeColumn.id !== overColumn.id) return;
 
-      if (activeColumn.id === overColumn.id) {
-        const newIndex = overColumn.cardIds.indexOf(overId);
-        if (newIndex !== -1) {
-          moveCard(activeId, activeColumn.id, overColumn.id, newIndex);
-        }
-      }
+      const oldIndex = activeColumn.cardIds.indexOf(activeId);
+      const newIndex = overColumn.cardIds.indexOf(overId);
+
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+      const newCardIds = arrayMove(activeColumn.cardIds, oldIndex, newIndex);
+      useKanbanStore.setState((state) => ({
+        columns: state.columns.map((col) =>
+          col.id === activeColumn.id ? { ...col, cardIds: newCardIds } : col
+        ),
+      }));
     },
     [findColumnByCardId, moveCard]
   );
@@ -219,6 +246,35 @@ export function KanbanBoard() {
             </button>
           )}
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={sortOrder !== 'none' ? 'default' : 'outline'}
+              size="sm"
+              className="gap-1.5"
+            >
+              <ArrowDownUp className="h-3.5 w-3.5" />
+              {sortOrder === 'asc' ? 'Due: Earliest' : sortOrder === 'desc' ? 'Due: Latest' : 'Sort'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-44">
+            <DropdownMenuItem onClick={() => setSortOrder('asc')}>
+              Due date: Earliest first
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder('desc')}>
+              Due date: Latest first
+            </DropdownMenuItem>
+            {sortOrder !== 'none' && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSortOrder('none')}>
+                  <X className="h-3.5 w-3.5" />
+                  Clear sort
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {allLabels.length > 0 && (
           <>
           <Popover>

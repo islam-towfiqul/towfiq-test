@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui-kit/dropdown-menu';
+import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import { KanbanCard } from './kanban-card';
 import type {
   KanbanCard as KanbanCardType,
@@ -40,6 +41,7 @@ export function KanbanColumn({
   const [newTitle, setNewTitle] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(column.title);
+  const [showDeleteColumnConfirm, setShowDeleteColumnConfirm] = useState(false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column.id}`,
@@ -124,7 +126,7 @@ export function KanbanColumn({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteColumn(column.id)}
+              onClick={() => setShowDeleteColumnConfirm(true)}
             >
               <Trash2 className="h-4 w-4" />
               Delete
@@ -200,6 +202,16 @@ export function KanbanColumn({
           </Button>
         )}
       </div>
+
+      <ConfirmationModal
+        open={showDeleteColumnConfirm}
+        onOpenChange={setShowDeleteColumnConfirm}
+        title="Delete list"
+        description={`Are you sure you want to delete "${column.title}"? All cards in this list will also be deleted. This action cannot be undone.`}
+        onConfirm={() => onDeleteColumn(column.id)}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

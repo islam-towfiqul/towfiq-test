@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Tag, Trash2, X } from 'lucide-react';
+import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ export function CardDetailDialog({
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(LABEL_COLORS[0].value);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (card && open) {
@@ -201,10 +203,7 @@ export function CardDetailDialog({
             variant="ghost"
             size="sm"
             className="text-red-500 hover:bg-red-50 hover:text-red-600"
-            onClick={() => {
-              onDelete(card.id);
-              onOpenChange(false);
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="mr-1 h-4 w-4" />
             Delete card
@@ -219,6 +218,19 @@ export function CardDetailDialog({
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete card"
+        description={`Are you sure you want to delete "${card.title}"? This action cannot be undone.`}
+        onConfirm={() => {
+          onDelete(card.id);
+          onOpenChange(false);
+        }}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </Dialog>
   );
 }
