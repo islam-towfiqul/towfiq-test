@@ -18,9 +18,21 @@ import type {
   KanbanColumn as KanbanColumnType,
 } from '../types/kanban.types';
 
+const COLUMN_ACCENT_COLORS = [
+  { dot: '#6366f1', badge: 'bg-indigo-100 text-indigo-700' },
+  { dot: '#f59e0b', badge: 'bg-amber-100 text-amber-700' },
+  { dot: '#10b981', badge: 'bg-emerald-100 text-emerald-700' },
+  { dot: '#ef4444', badge: 'bg-red-100 text-red-700' },
+  { dot: '#8b5cf6', badge: 'bg-violet-100 text-violet-700' },
+  { dot: '#3b82f6', badge: 'bg-blue-100 text-blue-700' },
+  { dot: '#ec4899', badge: 'bg-pink-100 text-pink-700' },
+  { dot: '#14b8a6', badge: 'bg-teal-100 text-teal-700' },
+];
+
 interface KanbanColumnProps {
   column: KanbanColumnType;
   cards: KanbanCardType[];
+  colorIndex: number;
   onAddCard: (columnId: string, title: string) => void;
   onEditCard: (card: KanbanCardType) => void;
   onDeleteCard: (cardId: string) => void;
@@ -31,12 +43,14 @@ interface KanbanColumnProps {
 export function KanbanColumn({
   column,
   cards,
+  colorIndex,
   onAddCard,
   onEditCard,
   onDeleteCard,
   onRenameColumn,
   onDeleteColumn,
 }: KanbanColumnProps) {
+  const accent = COLUMN_ACCENT_COLORS[colorIndex % COLUMN_ACCENT_COLORS.length];
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -86,7 +100,7 @@ export function KanbanColumn({
 
   return (
     <div className="flex max-h-full w-72 shrink-0 flex-col">
-      <div className="mb-2 flex shrink-0 items-center justify-between px-1">
+      <div className="mb-2 flex shrink-0 items-center justify-between rounded-t px-1 py-1">
         {isRenaming ? (
           <Input
             value={renameValue}
@@ -98,10 +112,14 @@ export function KanbanColumn({
           />
         ) : (
           <div className="flex items-center gap-2">
+            <span
+              className="h-3 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: accent.dot }}
+            />
             <h3 className="text-sm font-semibold text-high-emphasis">
               {column.title}
             </h3>
-            <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-medium-emphasis">
+            <span className={`rounded px-2 py-0.5 text-xs font-semibold ${accent.badge}`}>
               {cards.length}
             </span>
           </div>
@@ -157,9 +175,13 @@ export function KanbanColumn({
           </SortableContext>
 
           {cards.length === 0 && !isAdding && (
-            <p className="py-8 text-center text-xs text-medium-emphasis">
-              No cards yet
-            </p>
+            <div className="flex flex-col items-center justify-center gap-2 py-8">
+              <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-dashed border-border text-medium-emphasis">
+                <Plus className="h-4 w-4" />
+              </div>
+              <p className="text-xs text-medium-emphasis">No cards yet</p>
+              <p className="text-[11px] text-low-emphasis">Click below to add one</p>
+            </div>
           )}
         </div>
 

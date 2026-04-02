@@ -94,7 +94,7 @@ export const ConfirmationModal = ({
           </Button>
           <Button
             variant="default"
-            className="bg-primary rounded-[6px]"
+            className="bg-red-600 rounded-[6px]"
             onClick={handleConfirmClick}
           >
             {t(confirmText)}

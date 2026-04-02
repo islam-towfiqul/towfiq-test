@@ -356,10 +356,11 @@ export function KanbanBoard() {
             items={columns.map((c) => c.id)}
             strategy={horizontalListSortingStrategy}
           >
-            {columns.map((column) => (
+            {columns.map((column, index) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
+                colorIndex={index}
                 cards={columnCards[column.id] ?? []}
                 onAddCard={addCard}
                 onEditCard={handleEditCard}
@@ -371,48 +372,54 @@ export function KanbanBoard() {
           </SortableContext>
 
           {isAddingColumn ? (
-            <div className="w-72 shrink-0 space-y-2">
-              <Input
-                placeholder="Enter list title..."
-                value={newColumnTitle}
-                onChange={(e) => setNewColumnTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddColumn();
-                  } else if (e.key === 'Escape') {
-                    setIsAddingColumn(false);
-                    setNewColumnTitle('');
-                  }
-                }}
-                autoFocus
-                className="h-9 text-sm"
-              />
-              <div className="flex gap-1">
-                <Button size="sm" onClick={handleAddColumn}>
-                  Add list
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => {
-                    setIsAddingColumn(false);
-                    setNewColumnTitle('');
+            <div className="w-72 shrink-0">
+              <div className="rounded border bg-muted/40 p-2">
+                <Input
+                  placeholder="Enter list title..."
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddColumn();
+                    } else if (e.key === 'Escape') {
+                      setIsAddingColumn(false);
+                      setNewColumnTitle('');
+                    }
                   }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                  autoFocus
+                  className="mb-2 h-9 text-sm"
+                />
+                <div className="flex gap-1">
+                  <Button size="sm" onClick={handleAddColumn}>
+                    Add list
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      setIsAddingColumn(false);
+                      setNewColumnTitle('');
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
-            <Button
-              variant="outline"
-              className="h-10 w-72 shrink-0 justify-start border-dashed text-medium-emphasis"
-              onClick={() => setIsAddingColumn(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add another list
-            </Button>
+            <div className="w-72 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsAddingColumn(true)}
+                className="group flex w-full items-center gap-2 rounded border border-dashed border-border bg-muted/20 px-3 py-2 text-sm text-medium-emphasis transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded border border-dashed border-current">
+                  <Plus className="h-3.5 w-3.5" />
+                </span>
+                Add another list
+              </button>
+            </div>
           )}
         </div>
 
