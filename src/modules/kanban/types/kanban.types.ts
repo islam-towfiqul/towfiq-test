@@ -27,6 +27,69 @@ export interface KanbanBoard {
   cards: Record<string, KanbanCard>;
 }
 
+export interface KanbanItem {
+  ItemId: string;
+  CreatedDate: string;
+  CreatedBy: string;
+  LastUpdatedDate: string;
+  LastUpdatedBy: string;
+  IsDeleted: boolean;
+  Language: string;
+  OrganizationIds: string[];
+  Tags: string[];
+  DeletedDate: string | null;
+  title: string;
+  description: string;
+  labels: string[];
+  dueDate: string | null;
+  list: string; // listId — references KanbanListItem.ItemId
+}
+
+export interface KanbanPaginatedResponse {
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  items: KanbanItem[];
+}
+
+export interface GetKanbansResponse {
+  getKanbans: KanbanPaginatedResponse;
+}
+
+export interface KanbanQueryParams {
+  pageNo: number;
+  pageSize: number;
+  filter?: Record<string, unknown>;
+  sort?: Record<string, unknown>;
+}
+
+export interface KanbanListItem {
+  ItemId: string;
+  CreatedDate: string;
+  CreatedBy: string;
+  LastUpdatedDate: string;
+  LastUpdatedBy: string;
+  IsDeleted: boolean;
+  Language: string;
+  OrganizationIds: string[];
+  Tags: string[];
+  DeletedDate: string | null;
+  title: string;
+}
+
+export interface KanbanListsPaginatedResponse {
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  items: KanbanListItem[];
+}
+
+export interface GetKanbanListsResponse {
+  getKanbanLists: KanbanListsPaginatedResponse;
+}
+
 export const LABEL_COLORS = [
   { name: 'Green', value: '#10b981' },
   { name: 'Yellow', value: '#fbbf24' },

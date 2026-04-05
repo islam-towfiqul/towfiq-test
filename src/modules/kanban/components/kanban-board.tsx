@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -23,6 +23,7 @@ import { Card } from '@/components/ui-kit/card';
 import { Badge } from '@/components/ui-kit/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-kit/popover';
 import { Checkbox } from '@/components/ui-kit/checkbox';
+import { Skeleton } from '@/components/ui-kit/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,23 +34,137 @@ import {
 import { KanbanColumn } from './kanban-column';
 import { CardDetailDialog } from './card-detail-dialog';
 import { useKanbanStore } from '../hooks/use-kanban-store';
-import type { KanbanCard as KanbanCardType, KanbanLabel } from '../types/kanban.types';
+import {
+  useGetKanbanLists,
+  useGetKanbans,
+  useInsertKanban,
+  useUpdateKanban,
+  useDeleteKanban,
+  useUpdateKanbanList,
+  useDeleteKanbanList,
+  useInsertKanbanList,
+} from '../hooks/use-kanban';
+import type {
+  KanbanCard as KanbanCardType,
+  KanbanItem,
+  KanbanListItem,
+  KanbanLabel,
+} from '../types/kanban.types';
+import { LABEL_COLORS } from '../types/kanban.types';
+
+function labelNameToColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return LABEL_COLORS[Math.abs(hash) % LABEL_COLORS.length].value;
+}
+
+function apiListsToColumns(lists: KanbanListItem[]) {
+  return lists.map((list, order) => ({
+    id: list.ItemId,
+    title: list.title,
+    order,
+    cardIds: [] as string[],
+  }));
+}
+
+function apiItemsToCards(
+  items: KanbanItem[],
+  columns: { id: string }[]
+): { cards: Record<string, KanbanCardType>; columnCardIds: Record<string, string[]> } {
+  const cards: Record<string, KanbanCardType> = {};
+  const columnCardIds: Record<string, string[]> = {};
+
+  columns.forEach((col) => {
+    columnCardIds[col.id] = [];
+  });
+
+  items.forEach((item, index) => {
+    const col = columns.find((c) => c.id === item.list);
+    if (!col) return;
+
+    const cardLabels: KanbanLabel[] = (item.labels ?? []).map((name) => ({
+      id: `label-${name}`,
+      name,
+      color: labelNameToColor(name),
+    }));
+
+    const cardId = item.ItemId || `card-api-${index}`;
+    cards[cardId] = {
+      id: cardId,
+      title: item.title || '',
+      description: item.description || '',
+      columnId: col.id,
+      labels: cardLabels,
+      dueDate: item.dueDate ?? null,
+      order: columnCardIds[col.id].length,
+      createdAt: item.CreatedDate || new Date().toISOString(),
+    };
+
+    columnCardIds[col.id].push(cardId);
+  });
+
+  return { cards, columnCardIds };
+}
 
 export function KanbanBoard() {
   const { t } = useTranslation();
+
+  const { data: kanbanListsData, isLoading: isListsLoading } = useGetKanbanLists({
+    pageNo: 1,
+    pageSize: 100,
+  });
+
+  const { data: kanbansData, isLoading: isKanbansLoading } = useGetKanbans({
+    pageNo: 1,
+    pageSize: 100,
+  });
+
+  const { mutate: insertKanbanList, isPending: isInsertingList } = useInsertKanbanList();
+  const { mutate: insertKanban } = useInsertKanban();
+  const { mutate: updateKanban } = useUpdateKanban();
+  const { mutate: deleteKanbanCard } = useDeleteKanban();
+  const { mutate: updateKanbanListMutation } = useUpdateKanbanList();
+  const { mutate: deleteKanbanListMutation } = useDeleteKanbanList();
+
   const {
     columns,
     cards,
     addColumn,
     renameColumn,
     deleteColumn,
-    addCard,
     updateCard,
     deleteCard,
     moveCard,
     addLabel,
     removeLabel,
   } = useKanbanStore();
+
+  const seededRef = useRef(false);
+
+  useEffect(() => {
+    if (seededRef.current) return;
+
+    const lists = kanbanListsData?.getKanbanLists?.items;
+    const items = kanbansData?.getKanbans?.items;
+
+    if (!lists) return;
+
+    seededRef.current = true;
+
+    const apiColumns = apiListsToColumns(lists);
+    const { cards: apiCards, columnCardIds } = apiItemsToCards(items ?? [], apiColumns);
+
+    const columnsWithCards = apiColumns.map((col) => ({
+      ...col,
+      cardIds: columnCardIds[col.id] ?? [],
+    }));
+
+    useKanbanStore.setState({ columns: columnsWithCards, cards: apiCards });
+  }, [kanbanListsData, kanbansData]);
+
+  const dragOriginColumnId = useRef<string | null>(null);
 
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -121,18 +236,17 @@ export function KanbanBoard() {
   }, [columns, cards, activeLabelFilters, searchQuery, sortOrder]);
 
   const findColumnByCardId = useCallback(
-    (cardId: string) => {
-      return columns.find((col) => col.cardIds.includes(cardId));
-    },
+    (cardId: string) => columns.find((col) => col.cardIds.includes(cardId)),
     [columns]
   );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      const { active } = event;
-      const cardId = active.id as string;
-      if (cards[cardId]) {
-        setActiveCard(cards[cardId]);
+      const cardId = event.active.id as string;
+      const card = cards[cardId];
+      if (card) {
+        setActiveCard(card);
+        dragOriginColumnId.current = card.columnId;
       }
     },
     [cards]
@@ -145,13 +259,11 @@ export function KanbanBoard() {
 
       const activeId = active.id as string;
       const overId = over.id as string;
-
       if (activeId === overId) return;
 
       const activeColumn = findColumnByCardId(activeId);
       if (!activeColumn) return;
 
-      // Only handle cross-column moves here
       let overColumnId: string;
       if (overId.startsWith('column-')) {
         overColumnId = overId.replace('column-', '');
@@ -160,7 +272,6 @@ export function KanbanBoard() {
         if (!overColumn) return;
         overColumnId = overColumn.id;
       }
-
       if (activeColumn.id === overColumnId) return;
 
       const overColumn = columns.find((c) => c.id === overColumnId);
@@ -184,23 +295,43 @@ export function KanbanBoard() {
       const { active, over } = event;
       setActiveCard(null);
 
+      const originColumnId = dragOriginColumnId.current;
+      dragOriginColumnId.current = null;
+
       if (!over) return;
 
       const activeId = active.id as string;
       const overId = over.id as string;
-
       if (activeId === overId) return;
 
       const activeColumn = findColumnByCardId(activeId);
       if (!activeColumn) return;
 
-      // Only handle same-column reordering here
+      // Cross-column drop: the card was already moved by handleDragOver;
+      // fire the mutation to persist the new list.
+      if (originColumnId && activeColumn.id !== originColumnId) {
+        const card = useKanbanStore.getState().cards[activeId];
+        if (card) {
+          updateKanban({
+            itemId: activeId,
+            input: {
+              title: card.title,
+              description: card.description,
+              labels: card.labels.map((l) => l.name),
+              dueDate: card.dueDate,
+              list: activeColumn.id,
+            },
+          });
+        }
+        return;
+      }
+
+      // Same-column reorder
       const overColumn = findColumnByCardId(overId);
       if (!overColumn || activeColumn.id !== overColumn.id) return;
 
       const oldIndex = activeColumn.cardIds.indexOf(activeId);
       const newIndex = overColumn.cardIds.indexOf(overId);
-
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
       const newCardIds = arrayMove(activeColumn.cardIds, oldIndex, newIndex);
@@ -210,7 +341,7 @@ export function KanbanBoard() {
         ),
       }));
     },
-    [findColumnByCardId, moveCard]
+    [findColumnByCardId, updateKanban]
   );
 
   const handleEditCard = useCallback((card: KanbanCardType) => {
@@ -218,13 +349,134 @@ export function KanbanBoard() {
     setIsDialogOpen(true);
   }, []);
 
+  const handleRenameColumn = useCallback(
+    (columnId: string, title: string) => {
+      updateKanbanListMutation(
+        { columnId, title },
+        { onSuccess: () => renameColumn(columnId, title) }
+      );
+    },
+    [updateKanbanListMutation, renameColumn]
+  );
+
+  const handleDeleteColumn = useCallback(
+    (columnId: string) => {
+      deleteKanbanListMutation(columnId, {
+        onSuccess: () => deleteColumn(columnId),
+      });
+    },
+    [deleteKanbanListMutation, deleteColumn]
+  );
+
+  const handleDeleteCard = useCallback(
+    (cardId: string) => {
+      deleteKanbanCard(cardId, {
+        onSuccess: () => deleteCard(cardId),
+      });
+    },
+    [deleteKanbanCard, deleteCard]
+  );
+
+  const handleSaveCard = useCallback(
+    (cardId: string, updates: Partial<KanbanCardType>) => {
+      const card = useKanbanStore.getState().cards[cardId];
+      if (!card) return;
+
+      const mergedCard = { ...card, ...updates };
+
+      updateKanban(
+        {
+          itemId: cardId,
+          input: {
+            title: mergedCard.title,
+            description: mergedCard.description,
+            labels: mergedCard.labels.map((l) => l.name),
+            dueDate: mergedCard.dueDate,
+            list: mergedCard.columnId,
+          },
+        },
+        {
+          onSuccess: () => {
+            updateCard(cardId, updates);
+          },
+        }
+      );
+    },
+    [updateKanban, updateCard]
+  );
+
+  const handleAddCard = useCallback(
+    (columnId: string, title: string) => {
+      insertKanban(
+        { title, list: columnId },
+        {
+          onSuccess: ({ insertKanban: result }) => {
+            const cardId = result.itemId;
+            useKanbanStore.setState((state) => {
+              const column = state.columns.find((c) => c.id === columnId);
+              if (!column) return state;
+              const newCard = {
+                id: cardId,
+                title,
+                description: '',
+                columnId,
+                labels: [],
+                dueDate: null,
+                order: column.cardIds.length,
+                createdAt: new Date().toISOString(),
+              };
+              return {
+                cards: { ...state.cards, [cardId]: newCard },
+                columns: state.columns.map((col) =>
+                  col.id === columnId
+                    ? { ...col, cardIds: [...col.cardIds, cardId] }
+                    : col
+                ),
+              };
+            });
+          },
+        }
+      );
+    },
+    [insertKanban]
+  );
+
   const handleAddColumn = () => {
     const trimmed = newColumnTitle.trim();
-    if (!trimmed) return;
-    addColumn(trimmed);
+    if (!trimmed || isInsertingList) return;
+
     setNewColumnTitle('');
     setIsAddingColumn(false);
+
+    insertKanbanList(
+      { title: trimmed },
+      { onSuccess: () => addColumn(trimmed) }
+    );
   };
+
+  if (isListsLoading || isKanbansLoading) {
+    return (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="mb-3 flex shrink-0 items-center gap-2">
+          <Skeleton className="h-9 w-56 rounded-md" />
+          <Skeleton className="h-9 w-20 rounded-md" />
+          <Skeleton className="h-9 w-20 rounded-md" />
+        </div>
+        <div className="flex items-start gap-4 overflow-x-auto p-1 pb-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="w-72 shrink-0 space-y-2">
+              <Skeleton className="h-8 w-full rounded" />
+              <div className="rounded border bg-muted/40 p-2 space-y-2">
+                {[1, 2, 3].map((j) => (
+                  <Skeleton key={j} className="h-20 w-full rounded" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -256,7 +508,11 @@ export function KanbanBoard() {
               className="gap-1.5"
             >
               <ArrowDownUp className="h-3.5 w-3.5" />
-              {sortOrder === 'asc' ? t('DUE_EARLIEST') : sortOrder === 'desc' ? t('DUE_LATEST') : t('SORT')}
+              {sortOrder === 'asc'
+                ? t('DUE_EARLIEST')
+                : sortOrder === 'desc'
+                  ? t('DUE_LATEST')
+                  : t('SORT')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
@@ -279,73 +535,74 @@ export function KanbanBoard() {
         </DropdownMenu>
         {allLabels.length > 0 && (
           <>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Filter className="h-3.5 w-3.5" />
-                {t('FILTER')}
-                {activeLabelFilters.size > 0 && (
-                  <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
-                    {activeLabelFilters.size}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-56 p-2">
-              <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                <span className="text-xs font-semibold text-high-emphasis">{t('LABELS')}</span>
-                {activeLabelFilters.size > 0 && (
-                  <button
-                    type="button"
-                    className="text-xs text-medium-emphasis hover:text-high-emphasis"
-                    onClick={() => setActiveLabelFilters(new Set())}
-                  >
-                    {t('CLEAR_ALL')}
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-col">
-                {allLabels.map((label) => {
-                  const isActive = activeLabelFilters.has(label.name);
-                  return (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Filter className="h-3.5 w-3.5" />
+                  {t('FILTER')}
+                  {activeLabelFilters.size > 0 && (
+                    <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
+                      {activeLabelFilters.size}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-2">
+                <div className="mb-2 flex items-center justify-between px-2 pt-1">
+                  <span className="text-xs font-semibold text-high-emphasis">{t('LABELS')}</span>
+                  {activeLabelFilters.size > 0 && (
                     <button
-                      key={label.name}
                       type="button"
-                      className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-accent"
+                      className="text-xs text-medium-emphasis hover:text-high-emphasis"
+                      onClick={() => setActiveLabelFilters(new Set())}
+                    >
+                      {t('CLEAR_ALL')}
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  {allLabels.map((label) => {
+                    const isActive = activeLabelFilters.has(label.name);
+                    return (
+                      <button
+                        key={label.name}
+                        type="button"
+                        className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-accent"
+                        onClick={() => toggleLabelFilter(label.name)}
+                      >
+                        <Checkbox checked={isActive} />
+                        <span
+                          className="h-4 w-4 shrink-0 rounded"
+                          style={{ backgroundColor: label.color }}
+                        />
+                        <span className="truncate text-sm">{label.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {activeLabelFilters.size > 0 && (
+              <div className="flex items-center gap-1.5">
+                {allLabels
+                  .filter((l) => activeLabelFilters.has(l.name))
+                  .map((label) => (
+                    <Badge
+                      key={label.name}
+                      className="cursor-pointer select-none border-none text-white"
+                      style={{ backgroundColor: label.color }}
                       onClick={() => toggleLabelFilter(label.name)}
                     >
-                      <Checkbox checked={isActive} />
-                      <span
-                        className="h-4 w-4 shrink-0 rounded"
-                        style={{ backgroundColor: label.color }}
-                      />
-                      <span className="truncate text-sm">{label.name}</span>
-                    </button>
-                  );
-                })}
+                      {label.name}
+                      <X className="ml-1 h-3 w-3" />
+                    </Badge>
+                  ))}
               </div>
-            </PopoverContent>
-          </Popover>
-          {activeLabelFilters.size > 0 && (
-            <div className="flex items-center gap-1.5">
-              {allLabels
-                .filter((l) => activeLabelFilters.has(l.name))
-                .map((label) => (
-                  <Badge
-                    key={label.name}
-                    className="cursor-pointer select-none border-none text-white"
-                    style={{ backgroundColor: label.color }}
-                    onClick={() => toggleLabelFilter(label.name)}
-                  >
-                    {label.name}
-                    <X className="ml-1 h-3 w-3" />
-                  </Badge>
-                ))}
-            </div>
-          )}
+            )}
           </>
         )}
       </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -364,11 +621,11 @@ export function KanbanBoard() {
                 column={column}
                 colorIndex={index}
                 cards={columnCards[column.id] ?? []}
-                onAddCard={addCard}
+                onAddCard={handleAddCard}
                 onEditCard={handleEditCard}
-                onDeleteCard={deleteCard}
-                onRenameColumn={renameColumn}
-                onDeleteColumn={deleteColumn}
+                onDeleteCard={handleDeleteCard}
+                onRenameColumn={handleRenameColumn}
+                onDeleteColumn={handleDeleteColumn}
               />
             ))}
           </SortableContext>
@@ -393,12 +650,13 @@ export function KanbanBoard() {
                   className="mb-2 h-9 text-sm"
                 />
                 <div className="flex gap-1">
-                  <Button size="sm" onClick={handleAddColumn}>
-                    {t('ADD_LIST')}
+                  <Button size="sm" onClick={handleAddColumn} disabled={isInsertingList}>
+                    {isInsertingList ? t('ADDING') : t('ADD_LIST')}
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    disabled={isInsertingList}
                     onClick={() => {
                       setIsAddingColumn(false);
                       setNewColumnTitle('');
@@ -441,9 +699,7 @@ export function KanbanBoard() {
                   ))}
                 </div>
               )}
-              <p className="text-sm font-medium text-high-emphasis">
-                {activeCard.title}
-              </p>
+              <p className="text-sm font-medium text-high-emphasis">{activeCard.title}</p>
             </Card>
           ) : null}
         </DragOverlay>
@@ -453,8 +709,8 @@ export function KanbanBoard() {
         card={editingCard}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSave={updateCard}
-        onDelete={deleteCard}
+        onSave={handleSaveCard}
+        onDelete={handleDeleteCard}
         onAddLabel={addLabel}
         onRemoveLabel={removeLabel}
       />
