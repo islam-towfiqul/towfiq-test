@@ -10,4 +10,5 @@ export const publicRoutes = [
   '/verify-mfa',
   '/sso-activation',
   '/oidc',
+  '/login/callback',
 ];

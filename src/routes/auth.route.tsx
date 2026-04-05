@@ -14,6 +14,7 @@ import { SigninOidcCallBackPage } from '@/modules/auth/pages/signin-oidc-callbac
 export const AuthRoutes = (
   <Route element={<AuthLayout />}>
     <Route path="/login" element={<SigninPage />} />
+    <Route path="/login/callback" element={<SigninPage />} />
     <Route path="/oidc" element={<SigninOidcCallBackPage />} />
     <Route path="/signup" element={<SignupPage />} />
     <Route path="/sent-email" element={<EmailSentPage />} />
