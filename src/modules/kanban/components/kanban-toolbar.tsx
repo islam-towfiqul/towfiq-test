@@ -62,9 +62,9 @@ export const KanbanToolbar = memo(function KanbanToolbar() {
           >
             <ArrowDownUp className="h-3.5 w-3.5" />
             {sortOrder === 'asc'
-              ? t('DUE_EARLIEST')
+              ? t('DUE_DATE_EARLIEST_FIRST')
               : sortOrder === 'desc'
-                ? t('DUE_LATEST')
+                ? t('DUE_DATE_LATEST_FIRST')
                 : t('SORT')}
           </Button>
         </DropdownMenuTrigger>
