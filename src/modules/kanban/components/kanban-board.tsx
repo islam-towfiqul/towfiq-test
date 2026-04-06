@@ -35,7 +35,21 @@ import {
   useDeleteKanbanList,
   useInsertKanbanList,
 } from '../hooks/use-kanban';
-import type { KanbanCard as KanbanCardType } from '../types/kanban.types';
+import type {
+  KanbanCard as KanbanCardType,
+  KanbanColumn as KanbanColumnType,
+} from '../types/kanban.types';
+
+/** Resolve which list column a drag is over (droppable id, column id, or card id). */
+function resolveOverColumnId(overId: string, cols: KanbanColumnType[]): string | undefined {
+  if (overId.startsWith('column-')) {
+    return overId.slice('column-'.length);
+  }
+  if (cols.some((c) => c.id === overId)) {
+    return overId;
+  }
+  return cols.find((col) => col.cardIds.includes(overId))?.id;
+}
 
 interface KanbanBoardDndProps {
   onAddCard: (columnId: string, title: string) => void;
@@ -97,21 +111,18 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
       const activeColumn = findColumnByCardId(activeId);
       if (!activeColumn) return;
 
-      let overColumnId: string;
-      if (overId.startsWith('column-')) {
-        overColumnId = overId.replace('column-', '');
-      } else {
-        const overColumn = findColumnByCardId(overId);
-        if (!overColumn) return;
-        overColumnId = overColumn.id;
-      }
+      const overColumnId = resolveOverColumnId(overId, columns);
+      if (!overColumnId) return;
       if (activeColumn.id === overColumnId) return;
 
       const overColumn = columns.find((c) => c.id === overColumnId);
       if (!overColumn) return;
 
+      const droppedOnColumnSurface =
+        overId.startsWith('column-') || columns.some((c) => c.id === overId);
+
       let newIndex: number;
-      if (overId.startsWith('column-')) {
+      if (droppedOnColumnSurface) {
         newIndex = overColumn.cardIds.length;
       } else {
         newIndex = overColumn.cardIds.indexOf(overId);
@@ -133,47 +144,79 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
       const originColumnId = dragOriginColumnId.current;
       dragOriginColumnId.current = null;
 
-      if (!over) return;
-
       const activeId = active.id as string;
-      const overId = over.id as string;
-      if (activeId === overId) return;
+      let state = useKanbanStore.getState();
+      let card = state.cards[activeId];
+      if (!card) return;
 
-      const activeColumn = findColumnByCardId(activeId);
-      if (!activeColumn) return;
-
-      if (originColumnId && activeColumn.id !== originColumnId) {
-        const card = useKanbanStore.getState().cards[activeId];
-        if (card) {
-          updateKanbanMutation({
-            itemId: activeId,
-            input: {
-              title: card.title,
-              description: card.description,
-              labels: card.labels.map((l) => l.name),
-              dueDate: card.dueDate,
-              list: activeColumn.id,
-            },
-          });
+      // If dragOver skipped the last move, apply it from `over` before we read final column.
+      if (over) {
+        const overId = over.id as string;
+        const targetColumnId = resolveOverColumnId(overId, state.columns);
+        if (
+          targetColumnId &&
+          originColumnId &&
+          originColumnId !== targetColumnId &&
+          card.columnId === originColumnId
+        ) {
+          const toCol = state.columns.find((c) => c.id === targetColumnId);
+          if (toCol) {
+            const droppedOnColumnSurface =
+              overId.startsWith('column-') ||
+              state.columns.some((c) => c.id === overId);
+            let insertIndex = toCol.cardIds.length;
+            if (!droppedOnColumnSurface) {
+              const idx = toCol.cardIds.indexOf(overId);
+              if (idx !== -1) insertIndex = idx;
+            }
+            moveCard(activeId, card.columnId, targetColumnId, insertIndex);
+            state = useKanbanStore.getState();
+            card = state.cards[activeId];
+            if (!card) return;
+          }
         }
+      }
+
+      // After dragOver, dnd-kit often reports over.id === active.id (drop on self). Persist
+      // using actual store column vs origin — do not require active !== over.
+      if (originColumnId && card.columnId !== originColumnId) {
+        updateKanbanMutation({
+          itemId: activeId,
+          input: {
+            title: card.title,
+            description: card.description,
+            labels: card.labels.map((l) => l.name),
+            dueDate: card.dueDate,
+            list: card.columnId,
+          },
+        });
         return;
       }
 
-      const overColumn = findColumnByCardId(overId);
-      if (!overColumn || activeColumn.id !== overColumn.id) return;
+      // Same-column reorder only when over is another card
+      if (!over) return;
+      const overId = over.id as string;
+      if (activeId === overId) return;
 
-      const oldIndex = activeColumn.cardIds.indexOf(activeId);
-      const newIndex = overColumn.cardIds.indexOf(overId);
+      const cols = useKanbanStore.getState().columns;
+      const targetColumnId = resolveOverColumnId(overId, cols);
+      if (!targetColumnId || card.columnId !== targetColumnId) return;
+      if (overId.startsWith('column-') || cols.some((c) => c.id === overId)) return;
+
+      const col = cols.find((c) => c.id === card.columnId);
+      if (!col) return;
+      const oldIndex = col.cardIds.indexOf(activeId);
+      const newIndex = col.cardIds.indexOf(overId);
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
-      const newCardIds = arrayMove(activeColumn.cardIds, oldIndex, newIndex);
-      useKanbanStore.setState((state) => ({
-        columns: state.columns.map((col) =>
-          col.id === activeColumn.id ? { ...col, cardIds: newCardIds } : col
+      const newCardIds = arrayMove(col.cardIds, oldIndex, newIndex);
+      useKanbanStore.setState((s) => ({
+        columns: s.columns.map((c) =>
+          c.id === card.columnId ? { ...c, cardIds: newCardIds } : c
         ),
       }));
     },
-    [findColumnByCardId, updateKanbanMutation]
+    [moveCard, updateKanbanMutation]
   );
 
   const handleAddColumn = () => {
