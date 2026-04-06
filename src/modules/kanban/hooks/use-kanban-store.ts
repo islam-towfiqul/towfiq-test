@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { KanbanBoard, KanbanCard, KanbanColumn, KanbanLabel } from '../types/kanban.types';
+import type {
+  KanbanBoard,
+  KanbanCard,
+  KanbanColumn,
+  KanbanLabel,
+  KanbanSortOrder,
+} from '../types/kanban.types';
 
 const DEFAULT_COLUMNS: KanbanColumn[] = [
   { id: 'col-todo', title: 'To Do', order: 0, cardIds: [] },
@@ -11,6 +17,12 @@ const DEFAULT_COLUMNS: KanbanColumn[] = [
 interface KanbanState extends KanbanBoard {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+
+  labelFilterNames: string[];
+  setLabelFilterNames: (names: string[]) => void;
+
+  sortOrder: KanbanSortOrder;
+  setSortOrder: (order: KanbanSortOrder) => void;
 
   addColumn: (title: string) => void;
   renameColumn: (columnId: string, title: string) => void;
@@ -39,6 +51,12 @@ export const useKanbanStore = create<KanbanState>()(
       allLabels: [],
       searchQuery: '',
       setSearchQuery: (query) => set({ searchQuery: query }),
+
+      labelFilterNames: [],
+      setLabelFilterNames: (names) => set({ labelFilterNames: names }),
+
+      sortOrder: 'none',
+      setSortOrder: (order) => set({ sortOrder: order }),
 
       addColumn: (title) =>
         set((state) => ({

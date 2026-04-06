@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, type KeyboardEvent } from 'react';
+import { useState, memo, type KeyboardEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
@@ -17,7 +17,6 @@ import { ConfirmationModal } from '@/components/core/confirmation-modal/confirma
 import { KanbanCard } from './kanban-card';
 import { useKanbanStore } from '../hooks/use-kanban-store';
 import type { KanbanCard as KanbanCardType, KanbanColumn as KanbanColumnType } from '../types/kanban.types';
-import type { SortOrder } from './kanban-toolbar';
 
 const COLUMN_ACCENT_COLORS = [
   { dot: '#6366f1', badge: 'bg-indigo-100 text-indigo-700' },
@@ -33,8 +32,6 @@ const COLUMN_ACCENT_COLORS = [
 interface KanbanColumnProps {
   column: KanbanColumnType;
   colorIndex: number;
-  activeLabelFilters: Set<string>;
-  sortOrder: SortOrder;
   onAddCard: (columnId: string, title: string) => void;
   onEditCard: (card: KanbanCardType) => void;
   onDeleteCard: (cardId: string) => void;
@@ -45,8 +42,6 @@ interface KanbanColumnProps {
 export const KanbanColumn = memo(function KanbanColumn({
   column,
   colorIndex,
-  activeLabelFilters,
-  sortOrder,
   onAddCard,
   onEditCard,
   onDeleteCard,
@@ -61,33 +56,11 @@ export const KanbanColumn = memo(function KanbanColumn({
   const [renameValue, setRenameValue] = useState(column.title);
   const [showDeleteColumnConfirm, setShowDeleteColumnConfirm] = useState(false);
 
-  const columnCards = useKanbanStore(
+  const cards = useKanbanStore(
     useShallow((state) =>
       column.cardIds.map((id) => state.cards[id]).filter(Boolean) as KanbanCardType[]
     )
   );
-
-  const cards = useMemo(() => {
-    let colCards = columnCards;
-
-    if (activeLabelFilters.size > 0) {
-      colCards = colCards.filter((card) =>
-        card.labels.some((label) => activeLabelFilters.has(label.name))
-      );
-    }
-
-    if (sortOrder !== 'none') {
-      colCards = [...colCards].sort((a, b) => {
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        return sortOrder === 'asc' ? diff : -diff;
-      });
-    }
-
-    return colCards;
-  }, [columnCards, activeLabelFilters, sortOrder]);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column.id}`,

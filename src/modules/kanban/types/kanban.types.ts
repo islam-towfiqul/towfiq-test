@@ -58,6 +58,9 @@ export interface GetKanbansResponse {
   getKanbans: KanbanPaginatedResponse;
 }
 
+/** Due-date sort for API `sort` JSON; `none` means omit sort (server default). */
+export type KanbanSortOrder = 'none' | 'asc' | 'desc';
+
 export interface KanbanQueryParams {
   pageNo: number;
   pageSize: number;

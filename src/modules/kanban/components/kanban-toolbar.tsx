@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from 'react';
+import { useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownUp, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui-kit/button';
@@ -14,52 +14,40 @@ import {
 } from '@/components/ui-kit/dropdown-menu';
 import { KanbanSearchInput } from './kanban-search-input';
 import { useKanbanStore } from '../hooks/use-kanban-store';
+import type { KanbanSortOrder } from '../types/kanban.types';
 
-export type SortOrder = 'none' | 'asc' | 'desc';
+export type SortOrder = KanbanSortOrder;
 
-interface KanbanToolbarProps {
-  onSortChange: (order: SortOrder) => void;
-  onLabelFiltersChange: (filters: Set<string>) => void;
-}
-
-export const KanbanToolbar = memo(function KanbanToolbar({
-  onSortChange,
-  onLabelFiltersChange,
-}: KanbanToolbarProps) {
+export const KanbanToolbar = memo(function KanbanToolbar() {
   const allLabels = useKanbanStore((state) => state.allLabels);
+  const labelFilterNames = useKanbanStore((state) => state.labelFilterNames);
+  const setLabelFilterNames = useKanbanStore((state) => state.setLabelFilterNames);
+  const sortOrder = useKanbanStore((state) => state.sortOrder);
+  const setSortOrder = useKanbanStore((state) => state.setSortOrder);
+
   const { t } = useTranslation();
-  const [sortOrder, setSortOrder] = useState<SortOrder>('none');
-  const [activeLabelFilters, setActiveLabelFilters] = useState<Set<string>>(new Set());
 
   const handleSortChange = useCallback(
-    (order: SortOrder) => {
+    (order: KanbanSortOrder) => {
       setSortOrder(order);
-      onSortChange(order);
     },
-    [onSortChange]
+    [setSortOrder]
   );
 
   const toggleLabelFilter = useCallback(
     (labelName: string) => {
-      setActiveLabelFilters((prev) => {
-        const next = new Set(prev);
-        if (next.has(labelName)) {
-          next.delete(labelName);
-        } else {
-          next.add(labelName);
-        }
-        onLabelFiltersChange(next);
-        return next;
-      });
+      const prev = useKanbanStore.getState().labelFilterNames;
+      const next = new Set(prev);
+      if (next.has(labelName)) next.delete(labelName);
+      else next.add(labelName);
+      setLabelFilterNames(Array.from(next));
     },
-    [onLabelFiltersChange]
+    [setLabelFilterNames]
   );
 
   const clearLabelFilters = useCallback(() => {
-    const empty = new Set<string>();
-    setActiveLabelFilters(empty);
-    onLabelFiltersChange(empty);
-  }, [onLabelFiltersChange]);
+    setLabelFilterNames([]);
+  }, [setLabelFilterNames]);
 
   return (
     <div className="mb-3 flex shrink-0 items-center gap-2">
@@ -106,9 +94,9 @@ export const KanbanToolbar = memo(function KanbanToolbar({
               <Button variant="outline" size="sm" className="gap-1.5">
                 <Filter className="h-3.5 w-3.5" />
                 {t('FILTER')}
-                {activeLabelFilters.size > 0 && (
+                {labelFilterNames.length > 0 && (
                   <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
-                    {activeLabelFilters.size}
+                    {labelFilterNames.length}
                   </span>
                 )}
               </Button>
@@ -116,7 +104,7 @@ export const KanbanToolbar = memo(function KanbanToolbar({
             <PopoverContent align="start" className="w-56 p-2">
               <div className="mb-2 flex items-center justify-between px-2 pt-1">
                 <span className="text-xs font-semibold text-high-emphasis">{t('LABELS')}</span>
-                {activeLabelFilters.size > 0 && (
+                {labelFilterNames.length > 0 && (
                   <button
                     type="button"
                     className="text-xs text-medium-emphasis hover:text-high-emphasis"
@@ -128,7 +116,7 @@ export const KanbanToolbar = memo(function KanbanToolbar({
               </div>
               <div className="flex flex-col">
                 {allLabels.map((label) => {
-                  const isActive = activeLabelFilters.has(label.name);
+                  const isActive = labelFilterNames.includes(label.name);
                   return (
                     <button
                       key={label.name}
@@ -149,10 +137,10 @@ export const KanbanToolbar = memo(function KanbanToolbar({
             </PopoverContent>
           </Popover>
 
-          {activeLabelFilters.size > 0 && (
+          {labelFilterNames.length > 0 && (
             <div className="flex items-center gap-1.5">
               {allLabels
-                .filter((l) => activeLabelFilters.has(l.name))
+                .filter((l) => labelFilterNames.includes(l.name))
                 .map((label) => (
                   <Badge
                     key={label.name}

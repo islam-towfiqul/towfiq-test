@@ -7,6 +7,7 @@ import type {
   KanbanItem,
   KanbanLabel,
   KanbanListItem,
+  KanbanSortOrder,
 } from '../types/kanban.types';
 import { LABEL_COLORS } from '../types/kanban.types';
 
@@ -76,36 +77,66 @@ function collectLabels(cards: Record<string, KanbanCardType>): KanbanLabel[] {
   return Array.from(map.values());
 }
 
+/** MongoDB-style filter for `getKanbans` dynamic query. */
+function buildKanbanApiFilter(
+  searchTrimmed: string,
+  labelNames: string[]
+): Record<string, unknown> {
+  const parts: Record<string, unknown>[] = [];
+
+  if (searchTrimmed) {
+    parts.push({
+      $or: [
+        { title: { $regex: searchTrimmed, $options: 'i' } },
+        { description: { $regex: searchTrimmed, $options: 'i' } },
+      ],
+    });
+  }
+
+  if (labelNames.length > 0) {
+    parts.push({ labels: { $in: labelNames } });
+  }
+
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return parts[0];
+  return { $and: parts };
+}
+
+function buildKanbanApiSort(sortOrder: KanbanSortOrder): Record<string, unknown> {
+  if (sortOrder === 'none') return {};
+  if (sortOrder === 'asc') return { dueDate: 1 };
+  return { dueDate: -1 };
+}
+
 interface KanbanSearchDataLayerProps {
   kanbanListsData: GetKanbanListsResponse | undefined;
   onInitialKanbansReady: () => void;
 }
 
 /**
- * Subscribes to `searchQuery` in the store, runs the kanbans query, and syncs API data into the store.
- * Renders nothing. Kept as a sibling of the toolbar so search-driven updates do not re-render the toolbar.
+ * Subscribes to search, label filters, and sort in the store; runs `getKanbans` with
+ * merged `filter` / `sort`; syncs results into the Zustand board state.
  */
 export function KanbanSearchDataLayer({
   kanbanListsData,
   onInitialKanbansReady,
 }: KanbanSearchDataLayerProps) {
   const searchQuery = useKanbanStore((state) => state.searchQuery);
+  const labelFilterNames = useKanbanStore((state) => state.labelFilterNames);
+  const sortOrder = useKanbanStore((state) => state.sortOrder);
 
-  const kanbanFilter = useMemo(() => {
-    const trimmed = searchQuery.trim();
-    if (!trimmed) return {};
-    return {
-      $or: [
-        { title: { $regex: trimmed, $options: 'i' } },
-        { description: { $regex: trimmed, $options: 'i' } },
-      ],
-    };
-  }, [searchQuery]);
+  const kanbanFilter = useMemo(
+    () => buildKanbanApiFilter(searchQuery.trim(), labelFilterNames),
+    [searchQuery, labelFilterNames]
+  );
+
+  const kanbanSort = useMemo(() => buildKanbanApiSort(sortOrder), [sortOrder]);
 
   const { data: kanbansData, isSuccess: kanbansQuerySuccess } = useGetKanbans({
     pageNo: 1,
     pageSize: 100,
     filter: kanbanFilter,
+    sort: kanbanSort,
   });
 
   const readyNotifiedRef = useRef(false);
@@ -123,7 +154,9 @@ export function KanbanSearchDataLayer({
       onReadyRef.current();
     }
 
-    if (searchQuery.trim()) {
+    const hasTextSearch = searchQuery.trim().length > 0;
+
+    if (hasTextSearch) {
       const existingColumns = useKanbanStore.getState().columns;
       const { cards: apiCards, columnCardIds } = apiItemsToCards(items ?? [], existingColumns);
 
@@ -140,15 +173,27 @@ export function KanbanSearchDataLayer({
     const apiColumns = apiListsToColumns(lists);
     const { cards: apiCards, columnCardIds } = apiItemsToCards(items ?? [], apiColumns);
 
+    const shouldReplaceAllLabels =
+      searchQuery.trim().length === 0 && labelFilterNames.length === 0;
+
     useKanbanStore.setState({
       columns: apiColumns.map((col) => ({
         ...col,
         cardIds: columnCardIds[col.id] ?? [],
       })),
       cards: apiCards,
-      allLabels: collectLabels(apiCards),
+      allLabels: shouldReplaceAllLabels
+        ? collectLabels(apiCards)
+        : useKanbanStore.getState().allLabels,
     });
-  }, [kanbanListsData, kanbansData, kanbansQuerySuccess, searchQuery]);
+  }, [
+    kanbanListsData,
+    kanbansData,
+    kanbansQuerySuccess,
+    searchQuery,
+    labelFilterNames,
+    sortOrder,
+  ]);
 
   return null;
 }

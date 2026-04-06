@@ -22,7 +22,7 @@ import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
 import { Skeleton } from '@/components/ui-kit/skeleton';
 import { KanbanColumn } from './kanban-column';
-import { KanbanToolbar, type SortOrder } from './kanban-toolbar';
+import { KanbanToolbar } from './kanban-toolbar';
 import { CardDetailDialog } from './card-detail-dialog';
 import { KanbanSearchDataLayer } from './kanban-search-data-layer';
 import { useKanbanStore } from '../hooks/use-kanban-store';
@@ -38,8 +38,6 @@ import {
 import type { KanbanCard as KanbanCardType } from '../types/kanban.types';
 
 interface KanbanBoardDndProps {
-  activeLabelFilters: Set<string>;
-  sortOrder: SortOrder;
   onAddCard: (columnId: string, title: string) => void;
   onEditCard: (card: KanbanCardType) => void;
   onDeleteCard: (cardId: string) => void;
@@ -48,8 +46,6 @@ interface KanbanBoardDndProps {
 }
 
 const KanbanBoardDnd = memo(function KanbanBoardDnd({
-  activeLabelFilters,
-  sortOrder,
   onAddCard,
   onEditCard,
   onDeleteCard,
@@ -208,8 +204,6 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
               key={column.id}
               column={column}
               colorIndex={index}
-              activeLabelFilters={activeLabelFilters}
-              sortOrder={sortOrder}
               onAddCard={onAddCard}
               onEditCard={onEditCard}
               onDeleteCard={onDeleteCard}
@@ -319,12 +313,8 @@ export function KanbanBoard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const dialogCards = useKanbanStore((state) => (editingCardId ? state.cards : null));
   const editingCard = editingCardId && dialogCards ? (dialogCards[editingCardId] ?? null) : null;
-  const [activeLabelFilters, setActiveLabelFilters] = useState<Set<string>>(new Set());
-  const [sortOrder, setSortOrder] = useState<SortOrder>('none');
   const [kanbansReady, setKanbansReady] = useState(false);
 
-  const handleSortChange = useCallback((order: SortOrder) => setSortOrder(order), []);
-  const handleLabelFiltersChange = useCallback((filters: Set<string>) => setActiveLabelFilters(filters), []);
   const handleInitialKanbansReady = useCallback(() => {
     setKanbansReady(true);
   }, []);
@@ -479,14 +469,9 @@ export function KanbanBoard() {
         </>
       ) : (
         <>
-          <KanbanToolbar
-            onSortChange={handleSortChange}
-            onLabelFiltersChange={handleLabelFiltersChange}
-          />
+          <KanbanToolbar />
 
           <KanbanBoardDnd
-            activeLabelFilters={activeLabelFilters}
-            sortOrder={sortOrder}
             onAddCard={handleAddCard}
             onEditCard={handleEditCard}
             onDeleteCard={handleDeleteCard}
