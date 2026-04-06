@@ -26,10 +26,12 @@ export const useGetKanbanLists = (params: KanbanQueryParams) => {
 };
 
 export const useGetKanbans = (params: KanbanQueryParams) => {
+  const hasFilter = params.filter && Object.keys(params.filter).length > 0;
+
   return useGlobalQuery<GetKanbansResponse>({
     queryKey: ['kanbans', params],
     queryFn: () => getKanbans(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: hasFilter ? 0 : 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

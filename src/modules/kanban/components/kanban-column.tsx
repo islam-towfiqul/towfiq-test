@@ -1,4 +1,5 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, useMemo, memo, type KeyboardEvent } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -14,10 +15,9 @@ import {
 } from '@/components/ui-kit/dropdown-menu';
 import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import { KanbanCard } from './kanban-card';
-import type {
-  KanbanCard as KanbanCardType,
-  KanbanColumn as KanbanColumnType,
-} from '../types/kanban.types';
+import { useKanbanStore } from '../hooks/use-kanban-store';
+import type { KanbanCard as KanbanCardType, KanbanColumn as KanbanColumnType } from '../types/kanban.types';
+import type { SortOrder } from './kanban-toolbar';
 
 const COLUMN_ACCENT_COLORS = [
   { dot: '#6366f1', badge: 'bg-indigo-100 text-indigo-700' },
@@ -32,8 +32,9 @@ const COLUMN_ACCENT_COLORS = [
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
-  cards: KanbanCardType[];
   colorIndex: number;
+  activeLabelFilters: Set<string>;
+  sortOrder: SortOrder;
   onAddCard: (columnId: string, title: string) => void;
   onEditCard: (card: KanbanCardType) => void;
   onDeleteCard: (cardId: string) => void;
@@ -41,10 +42,11 @@ interface KanbanColumnProps {
   onDeleteColumn: (columnId: string) => void;
 }
 
-export function KanbanColumn({
+export const KanbanColumn = memo(function KanbanColumn({
   column,
-  cards,
   colorIndex,
+  activeLabelFilters,
+  sortOrder,
   onAddCard,
   onEditCard,
   onDeleteCard,
@@ -58,6 +60,34 @@ export function KanbanColumn({
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(column.title);
   const [showDeleteColumnConfirm, setShowDeleteColumnConfirm] = useState(false);
+
+  const columnCards = useKanbanStore(
+    useShallow((state) =>
+      column.cardIds.map((id) => state.cards[id]).filter(Boolean) as KanbanCardType[]
+    )
+  );
+
+  const cards = useMemo(() => {
+    let colCards = columnCards;
+
+    if (activeLabelFilters.size > 0) {
+      colCards = colCards.filter((card) =>
+        card.labels.some((label) => activeLabelFilters.has(label.name))
+      );
+    }
+
+    if (sortOrder !== 'none') {
+      colCards = [...colCards].sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        return sortOrder === 'asc' ? diff : -diff;
+      });
+    }
+
+    return colCards;
+  }, [columnCards, activeLabelFilters, sortOrder]);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column.id}`,
@@ -178,7 +208,10 @@ export function KanbanColumn({
 
           {cards.length === 0 && !isAdding && (
             <div className="flex flex-col items-center justify-center gap-2 py-8">
-              <div className="flex h-10 w-10 items-center justify-center rounded border-2 border-dashed border-border text-medium-emphasis">
+              <div
+                onClick={() => setIsAdding(true)}
+                className="cursor-pointer flex h-10 w-10 items-center justify-center rounded border-2 border-dashed border-border text-medium-emphasis"
+              >
                 <Plus className="h-4 w-4" />
               </div>
               <p className="text-xs text-medium-emphasis">{t('NO_CARDS_YET')}</p>
@@ -238,4 +271,4 @@ export function KanbanColumn({
       />
     </div>
   );
-}
+});

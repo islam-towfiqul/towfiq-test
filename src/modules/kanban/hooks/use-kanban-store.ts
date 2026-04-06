@@ -9,6 +9,9 @@ const DEFAULT_COLUMNS: KanbanColumn[] = [
 ];
 
 interface KanbanState extends KanbanBoard {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+
   addColumn: (title: string) => void;
   renameColumn: (columnId: string, title: string) => void;
   deleteColumn: (columnId: string) => void;
@@ -33,6 +36,9 @@ export const useKanbanStore = create<KanbanState>()(
     (set) => ({
       columns: DEFAULT_COLUMNS,
       cards: {},
+      allLabels: [],
+      searchQuery: '',
+      setSearchQuery: (query) => set({ searchQuery: query }),
 
       addColumn: (title) =>
         set((state) => ({
@@ -163,6 +169,9 @@ export const useKanbanStore = create<KanbanState>()(
               ...state.cards,
               [cardId]: { ...card, labels: [...card.labels, label] },
             },
+            allLabels: state.allLabels.some((l) => l.name === label.name)
+              ? state.allLabels
+              : [...state.allLabels, label],
           };
         }),
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -13,7 +13,7 @@ interface KanbanCardProps {
   onDelete: (cardId: string) => void;
 }
 
-export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
+export const KanbanCard = memo(function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
   const { t, i18n } = useTranslation();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const {
@@ -116,4 +116,4 @@ export function KanbanCard({ card, onEdit, onDelete }: KanbanCardProps) {
       />
     </div>
   );
-}
+});

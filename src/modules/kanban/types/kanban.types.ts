@@ -25,6 +25,7 @@ export interface KanbanColumn {
 export interface KanbanBoard {
   columns: KanbanColumn[];
   cards: Record<string, KanbanCard>;
+  allLabels: KanbanLabel[];
 }
 
 export interface KanbanItem {
