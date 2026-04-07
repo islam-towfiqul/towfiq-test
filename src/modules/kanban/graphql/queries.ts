@@ -21,6 +21,7 @@ export const GET_KANBANS_QUERY = `
         labels
         dueDate
         list
+        assignee
       }
     }
   }

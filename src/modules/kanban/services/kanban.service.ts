@@ -20,6 +20,8 @@ export interface InsertKanbanInput {
   labels?: string[];
   dueDate?: string | null;
   list: string;
+  /** Backend field (name); optional until fully supported. */
+  assignee?: string | null;
 }
 
 export interface InsertKanbanResponse {
@@ -51,6 +53,8 @@ export interface UpdateKanbanInput {
   labels?: string[];
   dueDate?: string | null;
   list?: string;
+  /** Backend field (name); optional until fully supported. */
+  assignee?: string | null;
 }
 
 export interface UpdateKanbanResponse {

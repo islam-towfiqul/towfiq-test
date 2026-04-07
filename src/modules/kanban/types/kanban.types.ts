@@ -48,6 +48,8 @@ export interface KanbanItem {
   labels: string[];
   dueDate: string | null;
   list: string; // listId — references KanbanListItem.ItemId
+  /** Backend field (assignee display name). */
+  assignee?: string | null;
   assigneeId?: string | null;
   assigneeName?: string | null;
 }

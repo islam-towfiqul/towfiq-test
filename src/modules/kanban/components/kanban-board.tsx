@@ -200,6 +200,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
             labels: card.labels.map((l) => l.name),
             dueDate: card.dueDate,
             list: card.columnId,
+            assignee: card.assigneeName,
           },
         });
         return;
@@ -416,9 +417,33 @@ export function KanbanBoard() {
 
   const handleAssigneeChange = useCallback(
     (cardId: string, assigneeId: string | null, assigneeName: string | null) => {
-      updateCard(cardId, { assigneeId, assigneeName });
+      const card = useKanbanStore.getState().cards[cardId];
+      if (!card) return;
+
+      const updates = { assigneeId, assigneeName };
+      updateCard(cardId, updates);
+
+      updateKanban(
+        {
+          itemId: cardId,
+          input: {
+            title: card.title,
+            description: card.description,
+            labels: card.labels.map((l) => l.name),
+            dueDate: card.dueDate,
+            list: card.columnId,
+            assignee: assigneeName,
+          },
+        },
+        {
+          onSuccess: () => {
+            // ensure server-accepted value is reflected
+            updateCard(cardId, updates);
+          },
+        }
+      );
     },
-    [updateCard]
+    [updateCard, updateKanban]
   );
 
   const handleSaveCard = useCallback(
@@ -437,6 +462,7 @@ export function KanbanBoard() {
             labels: mergedCard.labels.map((l) => l.name),
             dueDate: mergedCard.dueDate,
             list: mergedCard.columnId,
+            assignee: mergedCard.assigneeName,
           },
         },
         {

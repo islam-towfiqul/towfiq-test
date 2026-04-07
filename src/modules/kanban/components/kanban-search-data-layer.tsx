@@ -58,7 +58,7 @@ function apiItemsToCards(
       labels: cardLabels,
       dueDate: item.dueDate ?? null,
       assigneeId: item.assigneeId ?? null,
-      assigneeName: item.assigneeName ?? null,
+      assigneeName: item.assigneeName ?? item.assignee ?? null,
       order: columnCardIds[col.id].length,
       createdAt: item.CreatedDate || new Date().toISOString(),
     };
