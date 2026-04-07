@@ -57,6 +57,8 @@ function apiItemsToCards(
       columnId: col.id,
       labels: cardLabels,
       dueDate: item.dueDate ?? null,
+      assigneeId: item.assigneeId ?? null,
+      assigneeName: item.assigneeName ?? null,
       order: columnCardIds[col.id].length,
       createdAt: item.CreatedDate || new Date().toISOString(),
     };
@@ -65,6 +67,27 @@ function apiItemsToCards(
   });
 
   return { cards, columnCardIds };
+}
+
+/** After API sync, keep assignee fields from the previous store when the API omits them. */
+function mergeAssigneesFromPrev(
+  next: Record<string, KanbanCardType>,
+  prev: Record<string, KanbanCardType>
+): Record<string, KanbanCardType> {
+  const out: Record<string, KanbanCardType> = {};
+  for (const [id, card] of Object.entries(next)) {
+    const p = prev[id];
+    const apiHasAssignee =
+      card.assigneeId != null && String(card.assigneeId).length > 0;
+    out[id] = {
+      ...card,
+      assigneeId: apiHasAssignee ? card.assigneeId : (p?.assigneeId ?? null),
+      assigneeName: apiHasAssignee
+        ? (card.assigneeName ?? p?.assigneeName ?? null)
+        : (p?.assigneeName ?? null),
+    };
+  }
+  return out;
 }
 
 function collectLabels(cards: Record<string, KanbanCardType>): KanbanLabel[] {
@@ -158,7 +181,9 @@ export function KanbanSearchDataLayer({
 
     if (hasTextSearch) {
       const existingColumns = useKanbanStore.getState().columns;
-      const { cards: apiCards, columnCardIds } = apiItemsToCards(items ?? [], existingColumns);
+      const prevCards = useKanbanStore.getState().cards;
+      const { cards: rawCards, columnCardIds } = apiItemsToCards(items ?? [], existingColumns);
+      const apiCards = mergeAssigneesFromPrev(rawCards, prevCards);
 
       useKanbanStore.setState({
         cards: apiCards,
@@ -171,7 +196,9 @@ export function KanbanSearchDataLayer({
     }
 
     const apiColumns = apiListsToColumns(lists);
-    const { cards: apiCards, columnCardIds } = apiItemsToCards(items ?? [], apiColumns);
+    const prevCards = useKanbanStore.getState().cards;
+    const { cards: rawCards, columnCardIds } = apiItemsToCards(items ?? [], apiColumns);
+    const apiCards = mergeAssigneesFromPrev(rawCards, prevCards);
 
     const shouldReplaceAllLabels =
       searchQuery.trim().length === 0 && labelFilterNames.length === 0;

@@ -21,6 +21,9 @@ interface KanbanState extends KanbanBoard {
   labelFilterNames: string[];
   setLabelFilterNames: (names: string[]) => void;
 
+  assigneeFilterIds: string[];
+  setAssigneeFilterIds: (ids: string[]) => void;
+
   sortOrder: KanbanSortOrder;
   setSortOrder: (order: KanbanSortOrder) => void;
 
@@ -54,6 +57,9 @@ export const useKanbanStore = create<KanbanState>()(
 
       labelFilterNames: [],
       setLabelFilterNames: (names) => set({ labelFilterNames: names }),
+
+      assigneeFilterIds: [],
+      setAssigneeFilterIds: (ids) => set({ assigneeFilterIds: ids }),
 
       sortOrder: 'none',
       setSortOrder: (order) => set({ sortOrder: order }),
@@ -112,6 +118,8 @@ export const useKanbanStore = create<KanbanState>()(
             columnId,
             labels: [],
             dueDate: null,
+            assigneeId: null,
+            assigneeName: null,
             order: column.cardIds.length,
             createdAt: new Date().toISOString(),
           };

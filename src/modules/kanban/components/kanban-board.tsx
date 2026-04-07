@@ -25,6 +25,10 @@ import { KanbanColumn } from './kanban-column';
 import { KanbanToolbar } from './kanban-toolbar';
 import { CardDetailDialog } from './card-detail-dialog';
 import { KanbanSearchDataLayer } from './kanban-search-data-layer';
+import {
+  useKanbanMemberOptions,
+  type KanbanMemberOption,
+} from '../hooks/use-kanban-member-options';
 import { useKanbanStore } from '../hooks/use-kanban-store';
 import {
   useGetKanbanLists,
@@ -52,17 +56,25 @@ function resolveOverColumnId(overId: string, cols: KanbanColumnType[]): string |
 }
 
 interface KanbanBoardDndProps {
+  members: KanbanMemberOption[];
   onAddCard: (columnId: string, title: string) => void;
   onEditCard: (card: KanbanCardType) => void;
   onDeleteCard: (cardId: string) => void;
+  onAssigneeChange: (
+    cardId: string,
+    assigneeId: string | null,
+    assigneeName: string | null
+  ) => void;
   onRenameColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
 }
 
 const KanbanBoardDnd = memo(function KanbanBoardDnd({
+  members,
   onAddCard,
   onEditCard,
   onDeleteCard,
+  onAssigneeChange,
   onRenameColumn,
   onDeleteColumn,
 }: KanbanBoardDndProps) {
@@ -247,9 +259,11 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
               key={column.id}
               column={column}
               colorIndex={index}
+              members={members}
               onAddCard={onAddCard}
               onEditCard={onEditCard}
               onDeleteCard={onDeleteCard}
+              onAssigneeChange={onAssigneeChange}
               onRenameColumn={onRenameColumn}
               onDeleteColumn={onDeleteColumn}
             />
@@ -326,6 +340,9 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
               </div>
             )}
             <p className="text-sm font-medium text-high-emphasis">{activeCard.title}</p>
+            {activeCard.assigneeName && (
+              <p className="mt-1 text-xs text-medium-emphasis">{activeCard.assigneeName}</p>
+            )}
           </Card>
         ) : null}
       </DragOverlay>
@@ -334,6 +351,8 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
 });
 
 export function KanbanBoard() {
+  const members = useKanbanMemberOptions();
+
   const { data: kanbanListsData, isLoading: isListsLoading } = useGetKanbanLists({
     pageNo: 1,
     pageSize: 100,
@@ -395,6 +414,13 @@ export function KanbanBoard() {
     [deleteKanbanCard, deleteCard]
   );
 
+  const handleAssigneeChange = useCallback(
+    (cardId: string, assigneeId: string | null, assigneeName: string | null) => {
+      updateCard(cardId, { assigneeId, assigneeName });
+    },
+    [updateCard]
+  );
+
   const handleSaveCard = useCallback(
     (cardId: string, updates: Partial<KanbanCardType>) => {
       const card = useKanbanStore.getState().cards[cardId];
@@ -440,6 +466,8 @@ export function KanbanBoard() {
                 columnId,
                 labels: [],
                 dueDate: null,
+                assigneeId: null,
+                assigneeName: null,
                 order: column.cardIds.length,
                 createdAt: new Date().toISOString(),
               };
@@ -515,9 +543,11 @@ export function KanbanBoard() {
           <KanbanToolbar />
 
           <KanbanBoardDnd
+            members={members}
             onAddCard={handleAddCard}
             onEditCard={handleEditCard}
             onDeleteCard={handleDeleteCard}
+            onAssigneeChange={handleAssigneeChange}
             onRenameColumn={handleRenameColumn}
             onDeleteColumn={handleDeleteColumn}
           />
@@ -526,6 +556,7 @@ export function KanbanBoard() {
 
       <CardDetailDialog
         card={editingCard}
+        members={members}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveCard}

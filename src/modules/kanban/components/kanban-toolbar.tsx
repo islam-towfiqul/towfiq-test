@@ -1,6 +1,6 @@
 import { useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowDownUp, Filter, X } from 'lucide-react';
+import { ArrowDownUp, Filter, UserRound, X } from 'lucide-react';
 import { Button } from '@/components/ui-kit/button';
 import { Badge } from '@/components/ui-kit/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui-kit/popover';
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui-kit/dropdown-menu';
 import { KanbanSearchInput } from './kanban-search-input';
+import { useKanbanMemberOptions } from '../hooks/use-kanban-member-options';
 import { useKanbanStore } from '../hooks/use-kanban-store';
 import type { KanbanSortOrder } from '../types/kanban.types';
 
@@ -22,8 +23,12 @@ export const KanbanToolbar = memo(function KanbanToolbar() {
   const allLabels = useKanbanStore((state) => state.allLabels);
   const labelFilterNames = useKanbanStore((state) => state.labelFilterNames);
   const setLabelFilterNames = useKanbanStore((state) => state.setLabelFilterNames);
+  const assigneeFilterIds = useKanbanStore((state) => state.assigneeFilterIds);
+  const setAssigneeFilterIds = useKanbanStore((state) => state.setAssigneeFilterIds);
   const sortOrder = useKanbanStore((state) => state.sortOrder);
   const setSortOrder = useKanbanStore((state) => state.setSortOrder);
+
+  const members = useKanbanMemberOptions();
 
   const { t } = useTranslation();
 
@@ -48,6 +53,21 @@ export const KanbanToolbar = memo(function KanbanToolbar() {
   const clearLabelFilters = useCallback(() => {
     setLabelFilterNames([]);
   }, [setLabelFilterNames]);
+
+  const toggleAssigneeFilter = useCallback(
+    (memberId: string) => {
+      const prev = useKanbanStore.getState().assigneeFilterIds;
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      setAssigneeFilterIds(Array.from(next));
+    },
+    [setAssigneeFilterIds]
+  );
+
+  const clearAssigneeFilters = useCallback(() => {
+    setAssigneeFilterIds([]);
+  }, [setAssigneeFilterIds]);
 
   return (
     <div className="mb-3 flex shrink-0 items-center gap-2">
@@ -86,6 +106,56 @@ export const KanbanToolbar = memo(function KanbanToolbar() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {(members.length > 0 || assigneeFilterIds.length > 0) && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <UserRound className="h-3.5 w-3.5" />
+              {t('ASSIGNEE')}
+              {assigneeFilterIds.length > 0 && (
+                <span className="ml-0.5 flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-white">
+                  {assigneeFilterIds.length}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-56 p-2">
+            <div className="mb-2 flex items-center justify-between px-2 pt-1">
+              <span className="text-xs font-semibold text-high-emphasis">{t('ASSIGNEE')}</span>
+              {assigneeFilterIds.length > 0 && (
+                <button
+                  type="button"
+                  className="text-xs text-medium-emphasis hover:text-high-emphasis"
+                  onClick={clearAssigneeFilters}
+                >
+                  {t('CLEAR_ALL')}
+                </button>
+              )}
+            </div>
+            <div className="flex max-h-64 flex-col overflow-y-auto">
+              {members.length === 0 ? (
+                <p className="px-2 py-1.5 text-xs text-medium-emphasis">{t('NO_MEMBERS_FOUND')}</p>
+              ) : (
+                members.map((member) => {
+                  const isActive = assigneeFilterIds.includes(member.id);
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-accent"
+                      onClick={() => toggleAssigneeFilter(member.id)}
+                    >
+                      <Checkbox checked={isActive} />
+                      <span className="truncate text-sm">{member.name}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {allLabels.length > 0 && (
         <>
@@ -155,6 +225,24 @@ export const KanbanToolbar = memo(function KanbanToolbar() {
             </div>
           )}
         </>
+      )}
+
+      {assigneeFilterIds.length > 0 && members.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          {members
+            .filter((m) => assigneeFilterIds.includes(m.id))
+            .map((member) => (
+              <Badge
+                key={member.id}
+                variant="secondary"
+                className="cursor-pointer gap-1"
+                onClick={() => toggleAssigneeFilter(member.id)}
+              >
+                {member.name}
+                <X className="h-3 w-3" />
+              </Badge>
+            ))}
+        </div>
       )}
     </div>
   );

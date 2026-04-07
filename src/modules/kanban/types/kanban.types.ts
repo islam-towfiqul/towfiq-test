@@ -11,6 +11,10 @@ export interface KanbanCard {
   columnId: string;
   labels: KanbanLabel[];
   dueDate: string | null;
+  /** IAM user id when assigned; persisted locally and merged after API sync. */
+  assigneeId: string | null;
+  /** Display name for the assignee (denormalized for list view / offline merge). */
+  assigneeName: string | null;
   order: number;
   createdAt: string;
 }
@@ -44,6 +48,8 @@ export interface KanbanItem {
   labels: string[];
   dueDate: string | null;
   list: string; // listId — references KanbanListItem.ItemId
+  assigneeId?: string | null;
+  assigneeName?: string | null;
 }
 
 export interface KanbanPaginatedResponse {

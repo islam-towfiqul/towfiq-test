@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Tag, Trash2, X } from 'lucide-react';
+import { Calendar, Tag, Trash2, UserRound, X } from 'lucide-react';
 import { ConfirmationModal } from '@/components/core/confirmation-modal/confirmation-modal';
 import {
   Dialog,
@@ -13,11 +13,20 @@ import { Input } from '@/components/ui-kit/input';
 import { Textarea } from '@/components/ui-kit/textarea';
 import { Button } from '@/components/ui-kit/button';
 import { Badge } from '@/components/ui-kit/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui-kit/select';
+import type { KanbanMemberOption } from '../hooks/use-kanban-member-options';
 import type { KanbanCard, KanbanLabel } from '../types/kanban.types';
 import { LABEL_COLORS } from '../types/kanban.types';
 
 interface CardDetailDialogProps {
   card: KanbanCard | null;
+  members: KanbanMemberOption[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (cardId: string, updates: Partial<KanbanCard>) => void;
@@ -28,6 +37,7 @@ interface CardDetailDialogProps {
 
 export function CardDetailDialog({
   card,
+  members,
   open,
   onOpenChange,
   onSave,
@@ -38,6 +48,8 @@ export function CardDetailDialog({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [assigneeName, setAssigneeName] = useState<string | null>(null);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(LABEL_COLORS[0].value);
@@ -49,10 +61,22 @@ export function CardDetailDialog({
       setTitle(card.title);
       setDescription(card.description);
       setDueDate(card.dueDate ?? '');
+      setAssigneeId(card.assigneeId);
+      setAssigneeName(card.assigneeName);
       setShowLabelPicker(false);
       setNewLabelName('');
     }
   }, [card, open]);
+
+  const memberOptions = useMemo(() => {
+    if (!card?.assigneeId || !card.assigneeName) return members;
+    const has = members.some((m) => m.id === card.assigneeId);
+    if (has) return members;
+    return [
+      { id: card.assigneeId, name: card.assigneeName, imageUrl: undefined },
+      ...members,
+    ];
+  }, [members, card?.assigneeId, card?.assigneeName]);
 
   const handleSave = () => {
     if (!card) return;
@@ -60,6 +84,8 @@ export function CardDetailDialog({
       title: title.trim() || card.title,
       description,
       dueDate: dueDate || null,
+      assigneeId,
+      assigneeName,
     });
     onOpenChange(false);
   };
@@ -184,6 +210,38 @@ export function CardDetailDialog({
                 </Button>
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-medium-emphasis">
+              <UserRound className="h-3.5 w-3.5" />
+              {t('ASSIGNEE')}
+            </label>
+            <Select
+              value={assigneeId ?? '__none__'}
+              onValueChange={(v) => {
+                if (v === '__none__') {
+                  setAssigneeId(null);
+                  setAssigneeName(null);
+                  return;
+                }
+                const m = memberOptions.find((x) => x.id === v);
+                setAssigneeId(v);
+                setAssigneeName(m?.name ?? null);
+              }}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder={t('ASSIGNEE')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                {memberOptions.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
