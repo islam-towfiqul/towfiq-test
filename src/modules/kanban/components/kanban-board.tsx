@@ -17,6 +17,7 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Plus, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui-kit/button';
 import { Input } from '@/components/ui-kit/input';
 import { Card } from '@/components/ui-kit/card';
@@ -352,6 +353,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
 });
 
 export function KanbanBoard() {
+  const queryClient = useQueryClient();
   const members = useKanbanMemberOptions();
 
   const { data: kanbanListsData, isLoading: isListsLoading } = useGetKanbanLists({
@@ -439,11 +441,14 @@ export function KanbanBoard() {
           onSuccess: () => {
             // ensure server-accepted value is reflected
             updateCard(cardId, updates);
+            queryClient.invalidateQueries({
+              predicate: (q) => q.queryKey[0] === 'kanbans',
+            });
           },
         }
       );
     },
-    [updateCard, updateKanban]
+    [updateCard, updateKanban, queryClient]
   );
 
   const handleSaveCard = useCallback(

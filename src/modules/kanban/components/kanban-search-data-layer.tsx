@@ -77,14 +77,21 @@ function mergeAssigneesFromPrev(
   const out: Record<string, KanbanCardType> = {};
   for (const [id, card] of Object.entries(next)) {
     const p = prev[id];
-    const apiHasAssignee =
+    const apiHasAssigneeId =
       card.assigneeId != null && String(card.assigneeId).length > 0;
+    const apiHasAssigneeName =
+      card.assigneeName != null && String(card.assigneeName).trim().length > 0;
     out[id] = {
       ...card,
-      assigneeId: apiHasAssignee ? card.assigneeId : (p?.assigneeId ?? null),
-      assigneeName: apiHasAssignee
-        ? (card.assigneeName ?? p?.assigneeName ?? null)
-        : (p?.assigneeName ?? null),
+      // If API returns only a name (common), keep previous id so UI can still
+      // map it back to a member option, but treat the name as authoritative.
+      assigneeId: apiHasAssigneeId
+        ? card.assigneeId
+        : apiHasAssigneeName
+          ? (p?.assigneeId ?? null)
+          : null,
+      // If API omits assignee, do not keep a local-only value.
+      assigneeName: apiHasAssigneeName ? card.assigneeName : null,
     };
   }
   return out;

@@ -218,11 +218,19 @@ export function CardDetailDialog({
               {t('ASSIGNEE')}
             </label>
             <Select
-              value={assigneeId ?? '__none__'}
+              value={
+                assigneeId ?? (assigneeName ? `__name__:${assigneeName}` : '__none__')
+              }
               onValueChange={(v) => {
                 if (v === '__none__') {
                   setAssigneeId(null);
                   setAssigneeName(null);
+                  return;
+                }
+                if (v.startsWith('__name__:')) {
+                  // Keep name-only selection; user can pick a real member or clear.
+                  setAssigneeId(null);
+                  setAssigneeName(v.slice('__name__:'.length));
                   return;
                 }
                 const m = memberOptions.find((x) => x.id === v);
@@ -235,6 +243,11 @@ export function CardDetailDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">—</SelectItem>
+                {assigneeName && !assigneeId && (
+                  <SelectItem value={`__name__:${assigneeName}`} disabled>
+                    {assigneeName}
+                  </SelectItem>
+                )}
                 {memberOptions.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name}

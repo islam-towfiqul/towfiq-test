@@ -78,14 +78,24 @@ export const KanbanCard = memo(function KanbanCard({
   }, [members, card.assigneeId, card.assigneeName]);
 
   const currentAssignee = useMemo(() => {
-    if (!card.assigneeId) return null;
-    return (
-      assigneeOptions.find((m) => m.id === card.assigneeId) ?? {
-        id: card.assigneeId,
-        name: card.assigneeName ?? card.assigneeId,
-        imageUrl: undefined,
-      }
-    );
+    // Backend may persist only the assignee name (no id). Show name-only assignees too.
+    if (!card.assigneeId && !card.assigneeName) return null;
+
+    if (card.assigneeId) {
+      return (
+        assigneeOptions.find((m) => m.id === card.assigneeId) ?? {
+          id: card.assigneeId,
+          name: card.assigneeName ?? card.assigneeId,
+          imageUrl: undefined,
+        }
+      );
+    }
+
+    return {
+      id: `name:${card.assigneeName}`,
+      name: card.assigneeName ?? '',
+      imageUrl: undefined,
+    };
   }, [assigneeOptions, card.assigneeId, card.assigneeName]);
 
   return (
