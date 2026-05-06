@@ -75,10 +75,23 @@ export const KanbanColumn = memo(function KanbanColumn({
 
   const visibleCards = useMemo(() => {
     if (assigneeFilterIds.length === 0) return cards;
-    return cards.filter(
-      (c) => c.assigneeId && assigneeFilterIds.includes(c.assigneeId)
+    const selectedNames = new Set(
+      members
+        .filter((m) => assigneeFilterIds.includes(m.id))
+        .map((m) => m.name.trim())
+        .filter(Boolean)
     );
-  }, [cards, assigneeFilterIds]);
+
+    return cards.filter((c) => {
+      // Prefer id match when we have it.
+      if (c.assigneeId && assigneeFilterIds.includes(c.assigneeId)) return true;
+
+      // Some APIs persist only a name (no id). Fall back to name matching.
+      const n = c.assigneeName?.trim();
+      if (!n) return false;
+      return selectedNames.has(n);
+    });
+  }, [cards, assigneeFilterIds, members]);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column.id}`,
@@ -208,7 +221,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                 <Plus className="h-4 w-4" />
               </div>
               <p className="text-xs text-medium-emphasis">{t('NO_CARDS_YET')}</p>
-              <p className="text-[11px] text-low-emphasis">{t('CLICK_BELOW_TO_ADD_ONE')}</p>
+              {/* <p className="text-[11px] text-low-emphasis">{t('CLICK_BELOW_TO_ADD_ONE')}</p> */}
             </div>
           )}
         </div>
@@ -216,7 +229,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         {isAdding ? (
           <div className="mt-2 shrink-0 space-y-2">
             <Input
-              placeholder={t('ENTER_A_TITLE')}
+              placeholder={t('TITLE')}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={handleAddKeyDown}
@@ -225,7 +238,7 @@ export const KanbanColumn = memo(function KanbanColumn({
             />
             <div className="flex gap-1">
               <Button size="sm" onClick={handleAddCard}>
-                {t('ADD_CARD')}
+                {t('ADD')}
               </Button>
               <Button
                 variant="ghost"

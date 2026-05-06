@@ -180,7 +180,7 @@ export function CardDetailDialog({
                 <Input
                   value={newLabelName}
                   onChange={(e) => setNewLabelName(e.target.value)}
-                  placeholder={t('LABEL_NAME')}
+                  placeholder={t('NAME')}
                   className="h-8 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -206,7 +206,7 @@ export function CardDetailDialog({
                   ))}
                 </div>
                 <Button size="sm" className="h-7 text-xs" onClick={handleAddLabel}>
-                  {t('ADD_LABEL')}
+                  {t('ADD')}
                 </Button>
               </div>
             )}

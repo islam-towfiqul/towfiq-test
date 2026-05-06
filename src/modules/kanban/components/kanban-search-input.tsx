@@ -25,7 +25,7 @@ export const KanbanSearchInput = memo(function KanbanSearchInput({
       <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-medium-emphasis" />
       <input
         type="text"
-        placeholder={t('SEARCH_CARDS')}
+        placeholder={t('SEARCH')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="h-9 w-56 rounded-md border border-input bg-background pl-8 pr-8 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"

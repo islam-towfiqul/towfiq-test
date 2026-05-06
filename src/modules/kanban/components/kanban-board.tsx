@@ -201,7 +201,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
             labels: card.labels.map((l) => l.name),
             dueDate: card.dueDate,
             list: card.columnId,
-            assignee: card.assigneeName,
+            assignee: card.assigneeName ?? '',
           },
         });
         return;
@@ -319,7 +319,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
               <span className="flex h-6 w-6 items-center justify-center rounded border border-dashed border-current">
                 <Plus className="h-3.5 w-3.5" />
               </span>
-              {t('ADD_ANOTHER_LIST')}
+              {t('ADD_NEW_LIST')}
             </button>
           </div>
         )}
@@ -434,7 +434,7 @@ export function KanbanBoard() {
             labels: card.labels.map((l) => l.name),
             dueDate: card.dueDate,
             list: card.columnId,
-            assignee: assigneeName,
+            assignee: assigneeName ?? '',
           },
         },
         {
@@ -467,7 +467,7 @@ export function KanbanBoard() {
             labels: mergedCard.labels.map((l) => l.name),
             dueDate: mergedCard.dueDate,
             list: mergedCard.columnId,
-            assignee: mergedCard.assigneeName,
+            assignee: mergedCard.assigneeName ?? '',
           },
         },
         {

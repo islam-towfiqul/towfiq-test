@@ -8,9 +8,9 @@ export const KanbanPage = () => {
       <div className="mb-4 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-high-emphasis">{t('KANBAN_BOARD')}</h1>
-          <p className="text-sm text-medium-emphasis">
+          {/* <p className="text-sm text-medium-emphasis">
             {t('KANBAN_BOARD_SUBTITLE')}
-          </p>
+          </p> */}
         </div>
       </div>
       <KanbanBoard />

@@ -190,7 +190,7 @@ export const KanbanCard = memo(function KanbanCard({
                     <DropdownMenuItem
                       key={m.id}
                       className="gap-2"
-                      onClick={() => onAssigneeChange(card.id, m.id, m.name)}
+                      onSelect={() => onAssigneeChange(card.id, m.id, m.name)}
                     >
                       <Avatar className="h-6 w-6">
                         <AvatarImage src={m.imageUrl} alt="" />
@@ -207,7 +207,7 @@ export const KanbanCard = memo(function KanbanCard({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-medium-emphasis"
-                      onClick={() => onAssigneeChange(card.id, null, null)}
+                      onSelect={() => onAssigneeChange(card.id, null, null)}
                     >
                       {t('REMOVE')} {t('ASSIGNEE')}
                     </DropdownMenuItem>
