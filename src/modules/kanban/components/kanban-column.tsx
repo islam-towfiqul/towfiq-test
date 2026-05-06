@@ -269,7 +269,7 @@ export const KanbanColumn = memo(function KanbanColumn({
       <ConfirmationModal
         open={showDeleteColumnConfirm}
         onOpenChange={setShowDeleteColumnConfirm}
-        title={t('DELETE_LIST')}
+        title={t('DELETE_CARD')}
         description={t('DELETE_LIST_CONFIRM', { title: column.title })}
         onConfirm={() => onDeleteColumn(column.id)}
         confirmText={t('DELETE')}

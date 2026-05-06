@@ -116,7 +116,7 @@ export const DynamicBreadcrumb = ({ breadcrumbIndex }: Readonly<DynamicBreadcrum
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage className="text-xs text-muted-foreground">
-                    {displayLabel}
+                    {/* {displayLabel} */}
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>

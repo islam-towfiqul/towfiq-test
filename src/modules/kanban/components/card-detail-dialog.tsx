@@ -279,7 +279,7 @@ export function CardDetailDialog({
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="mr-1 h-4 w-4" />
-            {t('DELETE_CARD')}
+            {t('DELETE')}
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
@@ -296,7 +296,7 @@ export function CardDetailDialog({
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         title={t('DELETE_CARD')}
-        description={t('DELETE_CARD_CONFIRM', { title: card.title })}
+        description={t('DELETE_CARD_CONFIRM', { title: title })}
         onConfirm={() => {
           onDelete(card.id);
           onOpenChange(false);

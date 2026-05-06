@@ -276,7 +276,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
           <div className="w-72 shrink-0">
             <div className="rounded border bg-muted/40 p-2">
               <Input
-                placeholder={t('ENTER_LIST_TITLE')}
+                placeholder={t('TITLE')}
                 value={newColumnTitle}
                 onChange={(e) => setNewColumnTitle(e.target.value)}
                 onKeyDown={(e) => {
@@ -293,7 +293,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
               />
               <div className="flex gap-1">
                 <Button size="sm" onClick={handleAddColumn} disabled={isInsertingList}>
-                  {isInsertingList ? t('ADDING') : t('ADD_LIST')}
+                  {isInsertingList ? t('ADDING') : t('ADD')}
                 </Button>
                 <Button
                   variant="ghost"

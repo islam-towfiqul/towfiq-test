@@ -74,7 +74,7 @@ export function AddColumn({ onAddColumn }: Readonly<AddColumnProps>) {
             </Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button onClick={handleAddColumn}>{t('ADD_LIST')}</Button>
+            <Button onClick={handleAddColumn}>{t('ADD')}</Button>
           </DialogClose>
         </div>
       </DialogContent>
