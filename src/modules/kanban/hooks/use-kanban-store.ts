@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
-  KanbanBoard,
+  KanbanBoardData,
   KanbanCard,
   KanbanColumn,
   KanbanLabel,
@@ -14,7 +14,7 @@ const DEFAULT_COLUMNS: KanbanColumn[] = [
   { id: 'col-done', title: 'Done', order: 2, cardIds: [] },
 ];
 
-interface KanbanState extends KanbanBoard {
+interface KanbanState extends KanbanBoardData {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
@@ -26,6 +26,9 @@ interface KanbanState extends KanbanBoard {
 
   sortOrder: KanbanSortOrder;
   setSortOrder: (order: KanbanSortOrder) => void;
+
+  /** Clears board UI state (lists/cards/filters). Used when switching boards. */
+  resetBoardState: () => void;
 
   addColumn: (title: string) => void;
   renameColumn: (columnId: string, title: string) => void;
@@ -63,6 +66,17 @@ export const useKanbanStore = create<KanbanState>()(
 
       sortOrder: 'none',
       setSortOrder: (order) => set({ sortOrder: order }),
+
+      resetBoardState: () =>
+        set({
+          columns: [],
+          cards: {},
+          allLabels: [],
+          searchQuery: '',
+          labelFilterNames: [],
+          assigneeFilterIds: [],
+          sortOrder: 'none',
+        }),
 
       addColumn: (title) =>
         set((state) => ({

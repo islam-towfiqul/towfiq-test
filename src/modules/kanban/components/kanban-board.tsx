@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useCallback, useMemo, useRef, memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -31,6 +31,7 @@ import {
   type KanbanMemberOption,
 } from '../hooks/use-kanban-member-options';
 import { useKanbanStore } from '../hooks/use-kanban-store';
+import { useKanbanWorkspaceStore } from '../hooks/use-kanban-workspace-store';
 import {
   useGetKanbanLists,
   useInsertKanban,
@@ -81,6 +82,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
 }: KanbanBoardDndProps) {
   const { t } = useTranslation();
   const columns = useKanbanStore((state) => state.columns);
+  const activeBoardId = useKanbanWorkspaceStore((state) => state.activeBoardId);
 
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -202,6 +204,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
             dueDate: card.dueDate,
             list: card.columnId,
             assignee: card.assigneeName ?? '',
+            board: activeBoardId ?? '',
           },
         });
         return;
@@ -230,7 +233,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
         ),
       }));
     },
-    [moveCard, updateKanbanMutation]
+    [moveCard, updateKanbanMutation, activeBoardId]
   );
 
   const handleAddColumn = () => {
@@ -241,7 +244,7 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
     setIsAddingColumn(false);
 
     insertKanbanList(
-      { title: trimmed },
+      { title: trimmed, board: activeBoardId ?? undefined },
       { onSuccess: () => addColumn(trimmed) }
     );
   };
@@ -355,10 +358,17 @@ const KanbanBoardDnd = memo(function KanbanBoardDnd({
 export function KanbanBoard() {
   const queryClient = useQueryClient();
   const members = useKanbanMemberOptions();
+  const activeBoardId = useKanbanWorkspaceStore((state) => state.activeBoardId);
+  const resetBoardState = useKanbanStore((state) => state.resetBoardState);
 
-  const { data: kanbanListsData, isLoading: isListsLoading } = useGetKanbanLists({
+  const {
+    data: kanbanListsData,
+    isLoading: isListsLoading,
+    isFetching: isListsFetching,
+  } = useGetKanbanLists({
     pageNo: 1,
     pageSize: 100,
+    filter: activeBoardId ? { board: activeBoardId } : {},
   });
 
   const { mutate: insertKanban } = useInsertKanban();
@@ -379,6 +389,14 @@ export function KanbanBoard() {
   const dialogCards = useKanbanStore((state) => (editingCardId ? state.cards : null));
   const editingCard = editingCardId && dialogCards ? (dialogCards[editingCardId] ?? null) : null;
   const [kanbansReady, setKanbansReady] = useState(false);
+
+  useEffect(() => {
+    setKanbansReady(false);
+    // Prevent stale lists/cards showing when switching boards and force a refetch.
+    resetBoardState();
+    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'kanban-lists' });
+    queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'kanbans' });
+  }, [activeBoardId, resetBoardState, queryClient]);
 
   const handleInitialKanbansReady = useCallback(() => {
     setKanbansReady(true);
@@ -435,6 +453,7 @@ export function KanbanBoard() {
             dueDate: card.dueDate,
             list: card.columnId,
             assignee: assigneeName ?? '',
+            board: activeBoardId ?? '',
           },
         },
         {
@@ -448,7 +467,7 @@ export function KanbanBoard() {
         }
       );
     },
-    [updateCard, updateKanban, queryClient]
+    [updateCard, updateKanban, queryClient, activeBoardId]
   );
 
   const handleSaveCard = useCallback(
@@ -468,6 +487,7 @@ export function KanbanBoard() {
             dueDate: mergedCard.dueDate,
             list: mergedCard.columnId,
             assignee: mergedCard.assigneeName ?? '',
+            board: activeBoardId ?? '',
           },
         },
         {
@@ -477,13 +497,13 @@ export function KanbanBoard() {
         }
       );
     },
-    [updateKanban, updateCard]
+    [updateKanban, updateCard, activeBoardId]
   );
 
   const handleAddCard = useCallback(
     (columnId: string, title: string) => {
       insertKanban(
-        { title, list: columnId },
+        { title, list: columnId, board: activeBoardId ?? undefined },
         {
           onSuccess: ({ insertKanban: result }) => {
             const cardId = result.itemId;
@@ -515,10 +535,12 @@ export function KanbanBoard() {
         }
       );
     },
-    [insertKanban]
+    [insertKanban, activeBoardId]
   );
 
-  if (isListsLoading) {
+  // When switching boards, React Query may briefly keep previous data while fetching.
+  // Treat fetching as loading so we don't render a blank/mismatched board.
+  if (isListsLoading || isListsFetching) {
     return (
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="mb-3 flex shrink-0 items-center gap-2">
@@ -545,6 +567,7 @@ export function KanbanBoard() {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <KanbanSearchDataLayer
+        key={activeBoardId ?? 'none'}
         kanbanListsData={kanbanListsData}
         onInitialKanbansReady={handleInitialKanbansReady}
       />

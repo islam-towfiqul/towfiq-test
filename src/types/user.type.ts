@@ -2,6 +2,7 @@
 export type Membership = {
   organizationId: string;
   roles: string[];
+  permissions?: string[];
 };
 
 export type User = {
@@ -17,6 +18,8 @@ export type User = {
   phoneNumber: string | null;
   roles: string[];
   permissions: string[];
+  /** Provided by `GetAccount` in some environments. */
+  memberships?: Membership[];
   active: boolean;
   isVarified: boolean;
   profileImageUrl: string;

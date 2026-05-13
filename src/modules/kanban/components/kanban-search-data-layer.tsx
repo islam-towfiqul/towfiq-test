@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useGetKanbans } from '../hooks/use-kanban';
 import { useKanbanStore } from '../hooks/use-kanban-store';
+import { useKanbanWorkspaceStore } from '../hooks/use-kanban-workspace-store';
 import type {
   GetKanbanListsResponse,
   KanbanCard as KanbanCardType,
@@ -110,9 +111,14 @@ function collectLabels(cards: Record<string, KanbanCardType>): KanbanLabel[] {
 /** MongoDB-style filter for `getKanbans` dynamic query. */
 function buildKanbanApiFilter(
   searchTrimmed: string,
-  labelNames: string[]
+  labelNames: string[],
+  boardId: string | null
 ): Record<string, unknown> {
   const parts: Record<string, unknown>[] = [];
+
+  if (boardId) {
+    parts.push({ board: boardId });
+  }
 
   if (searchTrimmed) {
     parts.push({
@@ -154,10 +160,11 @@ export function KanbanSearchDataLayer({
   const searchQuery = useKanbanStore((state) => state.searchQuery);
   const labelFilterNames = useKanbanStore((state) => state.labelFilterNames);
   const sortOrder = useKanbanStore((state) => state.sortOrder);
+  const activeBoardId = useKanbanWorkspaceStore((state) => state.activeBoardId);
 
   const kanbanFilter = useMemo(
-    () => buildKanbanApiFilter(searchQuery.trim(), labelFilterNames),
-    [searchQuery, labelFilterNames]
+    () => buildKanbanApiFilter(searchQuery.trim(), labelFilterNames, activeBoardId),
+    [searchQuery, labelFilterNames, activeBoardId]
   );
 
   const kanbanSort = useMemo(() => buildKanbanApiSort(sortOrder), [sortOrder]);
@@ -227,6 +234,7 @@ export function KanbanSearchDataLayer({
     searchQuery,
     labelFilterNames,
     sortOrder,
+    activeBoardId,
   ]);
 
   return null;

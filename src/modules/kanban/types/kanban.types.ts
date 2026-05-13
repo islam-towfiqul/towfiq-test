@@ -26,10 +26,29 @@ export interface KanbanColumn {
   cardIds: string[];
 }
 
-export interface KanbanBoard {
+/** Zustand-persisted board grid state (columns + cards). */
+export interface KanbanBoardData {
   columns: KanbanColumn[];
   cards: Record<string, KanbanCard>;
   allLabels: KanbanLabel[];
+}
+
+/** Product “board” workspace — lists and cards belong to one board id. */
+export interface KanbanWorkspaceBoard {
+  ItemId: string;
+  CreatedDate?: string;
+  LastUpdatedDate?: string;
+  CreatedBy?: string;
+  Language?: string;
+  LastUpdatedBy?: string;
+  OrganizationIds?: string[];
+  Tags?: string[];
+  /** Card ids on this board (may be empty until cards exist). */
+  items?: string[];
+  name?: string;
+  description?: string;
+  /** Legacy field if an older API returned title instead of name. */
+  title?: string;
 }
 
 export interface KanbanItem {
@@ -48,6 +67,8 @@ export interface KanbanItem {
   labels: string[];
   dueDate: string | null;
   list: string; // listId — references KanbanListItem.ItemId
+  /** Parent workspace board id (when backend supports it). */
+  board?: string | null;
   /** Backend field (assignee display name). */
   assignee?: string | null;
   assigneeId?: string | null;
@@ -64,6 +85,20 @@ export interface KanbanPaginatedResponse {
 
 export interface GetKanbansResponse {
   getKanbans: KanbanPaginatedResponse;
+}
+
+export interface KanbanBoardsPaginatedResponse {
+  totalCount: number;
+  pageNo?: number;
+  pageSize?: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  items: KanbanWorkspaceBoard[];
+}
+
+export interface GetKanbanBoardsResponse {
+  getKanbanBoards: KanbanBoardsPaginatedResponse;
 }
 
 /** Due-date sort for API `sort` JSON; `none` means omit sort (server default). */
@@ -88,6 +123,8 @@ export interface KanbanListItem {
   Tags: string[];
   DeletedDate: string | null;
   title: string;
+  /** Parent workspace board id. */
+  board?: string | null;
 }
 
 export interface KanbanListsPaginatedResponse {

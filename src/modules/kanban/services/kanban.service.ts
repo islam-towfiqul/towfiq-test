@@ -1,5 +1,5 @@
 import { graphqlClient } from '@/lib/graphql-client';
-import { GET_KANBANS_QUERY, GET_KANBAN_LISTS_QUERY } from '../graphql/queries';
+import { GET_KANBANS_QUERY, GET_KANBAN_LISTS_QUERY, GET_KANBAN_BOARDS_QUERY } from '../graphql/queries';
 import {
   INSERT_KANBAN_MUTATION,
   UPDATE_KANBAN_MUTATION,
@@ -7,9 +7,11 @@ import {
   UPDATE_KANBAN_LIST_MUTATION,
   DELETE_KANBAN_LIST_MUTATION,
   INSERT_KANBAN_LIST_MUTATION,
+  INSERT_KANBAN_BOARD_MUTATION,
 } from '../graphql/mutations';
 import type {
   GetKanbansResponse,
+  GetKanbanBoardsResponse,
   GetKanbanListsResponse,
   KanbanQueryParams,
 } from '../types/kanban.types';
@@ -20,6 +22,8 @@ export interface InsertKanbanInput {
   labels?: string[];
   dueDate?: string | null;
   list: string;
+  /** Workspace board id — cards belong to the active board. */
+  board?: string;
   /** Backend field (name); optional until fully supported. */
   assignee?: string | null;
 }
@@ -53,6 +57,8 @@ export interface UpdateKanbanInput {
   labels?: string[];
   dueDate?: string | null;
   list?: string;
+  /** Workspace board id (when backend supports it). */
+  board?: string | null;
   /** Backend field (name); optional until fully supported. */
   assignee?: string | null;
 }
@@ -163,6 +169,8 @@ export const deleteKanbanList = async (columnId: string): Promise<DeleteKanbanLi
 
 export interface InsertKanbanListInput {
   title: string;
+  /** Parent workspace board id. */
+  board?: string;
 }
 
 export interface InsertKanbanListResponse {
@@ -284,4 +292,89 @@ export const getKanbans = async (params: KanbanQueryParams): Promise<GetKanbansR
       },
     };
   }
+};
+
+export const getKanbanBoards = async (params: KanbanQueryParams): Promise<GetKanbanBoardsResponse> => {
+  const { pageNo, pageSize, filter = {}, sort = {} } = params;
+
+  const input: Record<string, unknown> = { pageNo, pageSize };
+
+  if (filter && Object.keys(filter).length > 0) {
+    input.filter = JSON.stringify(filter);
+  }
+
+  if (sort && Object.keys(sort).length > 0) {
+    input.sort = JSON.stringify(sort);
+  }
+
+  try {
+    const response = await graphqlClient.query({
+      query: GET_KANBAN_BOARDS_QUERY,
+      variables: { input },
+    });
+
+    const responseData = (response as any)?.data || (response as any);
+
+    if (responseData && typeof responseData === 'object' && 'getKanbanBoards' in responseData) {
+      return responseData as GetKanbanBoardsResponse;
+    }
+
+    return {
+      getKanbanBoards: {
+        totalCount: 0,
+        pageNo,
+        pageSize: pageSize,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        items: [],
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching kanban boards:', error);
+    return {
+      getKanbanBoards: {
+        totalCount: 0,
+        pageNo,
+        pageSize: pageSize,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        items: [],
+      },
+    };
+  }
+};
+
+export interface InsertKanbanBoardInput {
+  name: string;
+  description: string;
+  /** Card item ids belonging to this board; empty when creating, append as cards are created. */
+  items: string[];
+}
+
+export interface InsertKanbanBoardResponse {
+  insertKanbanBoard: {
+    acknowledged: boolean;
+    itemId: string;
+    totalImpactedData: number;
+    message?: string | null;
+  };
+}
+
+export const insertKanbanBoard = async (
+  input: InsertKanbanBoardInput
+): Promise<InsertKanbanBoardResponse> => {
+  const response = await graphqlClient.mutate<InsertKanbanBoardResponse>({
+    query: INSERT_KANBAN_BOARD_MUTATION,
+    variables: { input },
+  });
+
+  const data = (response as any)?.data ?? response;
+
+  if (!data?.insertKanbanBoard) {
+    throw new Error('Failed to insert kanban board');
+  }
+
+  return data as InsertKanbanBoardResponse;
 };

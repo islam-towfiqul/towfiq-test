@@ -57,3 +57,14 @@ export const INSERT_KANBAN_LIST_MUTATION = `
     }
   }
 `;
+
+export const INSERT_KANBAN_BOARD_MUTATION = `
+  mutation InsertKanbanBoard($input: KanbanBoardInsertInput!) {
+    insertKanbanBoard(input: $input) {
+      acknowledged
+      itemId
+      totalImpactedData
+      message
+    }
+  }
+`;

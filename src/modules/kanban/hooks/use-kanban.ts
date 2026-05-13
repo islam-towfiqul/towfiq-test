@@ -1,15 +1,18 @@
 import { useGlobalQuery, useGlobalMutation } from '@/state/query-client/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import type { GetKanbansResponse, GetKanbanListsResponse, KanbanQueryParams } from '../types/kanban.types';
+import type { GetKanbansResponse, GetKanbanBoardsResponse, GetKanbanListsResponse, KanbanQueryParams } from '../types/kanban.types';
 import {
   getKanbans,
+  getKanbanBoards,
   getKanbanLists,
   insertKanban,
+  insertKanbanBoard,
   updateKanban,
   deleteKanban,
   updateKanbanList,
   deleteKanbanList,
   insertKanbanList,
+  type InsertKanbanBoardInput,
   type InsertKanbanInput,
   type UpdateKanbanInput,
   type InsertKanbanListInput,
@@ -19,6 +22,16 @@ export const useGetKanbanLists = (params: KanbanQueryParams) => {
   return useGlobalQuery<GetKanbanListsResponse>({
     queryKey: ['kanban-lists', params],
     queryFn: () => getKanbanLists(params),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useGetKanbanBoards = (params: KanbanQueryParams) => {
+  return useGlobalQuery<GetKanbanBoardsResponse>({
+    queryKey: ['kanban-boards', params],
+    queryFn: () => getKanbanBoards(params),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -81,6 +94,22 @@ export const useUpdateKanbanList = () => {
 export const useDeleteKanbanList = () => {
   return useGlobalMutation({
     mutationFn: (columnId: string) => deleteKanbanList(columnId),
+    onError: (error) => {
+      throw error;
+    },
+  });
+};
+
+export const useInsertKanbanBoard = () => {
+  const queryClient = useQueryClient();
+
+  return useGlobalMutation({
+    mutationFn: (input: InsertKanbanBoardInput) => insertKanbanBoard(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === 'kanban-boards',
+      });
+    },
     onError: (error) => {
       throw error;
     },
